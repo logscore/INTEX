@@ -10,7 +10,7 @@
     "typescript": "^5"
   },
   "scripts": {
-    "build": "bun build index.js"
+    "serve": "bun run index.js"
   },
   "dependencies": {
     "body-parser": "^2.2.1",
