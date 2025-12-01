@@ -10,6 +10,14 @@
     "typescript": "^5"
   },
   "scripts": {
-    "build": "bun build index.js"
+    "serve": "bun run index.js"
+  },
+  "dependencies": {
+    "body-parser": "^2.2.1",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.0",
+    "express-session": "^1.18.2",
+    "knex": "^3.1.0",
+    "pg": "^8.16.3"
   }
 }
