@@ -10,7 +10,7 @@
 
   <style>
     body {
-      background-color: #FFD6CF; /* 2% darker salmon */
+      background-color: #FFD6CF;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
@@ -34,7 +34,7 @@
     /* BUTTONS */
     :root {
       --gray: #555;
-      --donate: #ff8b70; /* your standout donate color */
+      --donate: #ff8b70;
     }
 
     .btn-white {
@@ -66,19 +66,21 @@
 
     /* FOOTER */
     .footer {
-      background-color: #ffb8a6;
-      padding: 15px 0;
-      text-align: center;
+        background-color: black;
+        color: white;
+        height: 100px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top: 0;
     }
 
     .footer-text {
-      font-size: 1.2rem;
-      color: #333;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 8px;
-      font-weight: bold;
+        font-family: 'DM Serif Display', serif;
+        font-size: 1.5rem;
+        display: flex;
+        gap: 10px;
+        align-items: center;
     }
 
     .copyright {
@@ -126,10 +128,10 @@
           <tbody>
             <% registeredEvents.forEach(event => { %>
               <tr>
-                <td><%= event.eventName %></td>
-                <td><%= event.eventDate %></td>
-                <td><%= event.eventLocation %></td>
-                <td><%= event.eventDescription %></td>
+                <td><%= public.event.eventName %></td>
+                <td><%= public.event.eventDate %></td>
+                <td><%= public.event.eventLocation %></td>
+                <td><%= public.event.eventDescription %></td>
 
                 <td>
                   <a href="/displaySurveys?eventId=<%= event.eventId %>"
