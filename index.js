@@ -20,35 +20,32 @@ app.set("view engine", "ejs");
 const bodyParser = require("body-parser");
 
 // tells express how to read form data in the body of a request
-app.use(express.urlencoded({extended: true}));
+app.use(express.urlencoded({ extended: true }));
 
 // set the session varible
 app.use(
-    session(
-        {
-    secret: process.env.SESSION_SECRET || 'fallback-secret-key',
+  session({
+    secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
-        }
-    )
+  }),
 );
 
 // global authentication middleware
 app.use((req, res, next) => {
-    // Skip authentication for login routes
-    if (req.path === '/' || req.path === '/login' || req.path === '/logout') {
-        //continue with the request path
-        return next();
-    }
-    
-    // Check if user is logged in for all other routes
-    if (req.session.isLoggedIn) {
-        //notice no return because nothing below it
-        next(); // User is logged in, continue
-    } 
-    else {
-        res.render("login", { error_message: "Please log in to access this page" });
-    }
+  // Skip authentication for login routes
+  if (req.path === "/" || req.path === "/login" || req.path === "/logout") {
+    //continue with the request path
+    return next();
+  }
+
+  // Check if user is logged in for all other routes
+  if (req.session.isLoggedIn) {
+    //notice no return because nothing below it
+    next(); // User is logged in, continue
+  } else {
+    res.render("login", { error_message: "Please log in to access this page" });
+  }
 });
 
 // set up connection to database
@@ -59,30 +56,32 @@ const knex = require("knex")({
     user: process.env.POSTGRES_USER,
     password: process.env.POSTGRES_PASSWORD,
     database: process.env.POSTGRES_DATABASE,
+    port: process.env.POSTGRES_PORT,
   },
 });
 
 // retrieve user login data from the database
 app.post("/login", (req, res) => {
-  let sName = req.body.username;
+  let sEmail = req.body.email;
   let sPassword = req.body.password;
 
   // if the inputted username and password match a row in the database, create the session variable and allow user access to the website
-  knex.select("username", "password", "level")
-    .from('users')
-    .where("username", sName)
+  knex
+    .select("email", "password", "level")
+    .from("public.users")
+    .where("email", sEmail)
     .andWhere("password", sPassword)
-    .then(users => {
+    .then((users) => {
       if (users.length > 0) {
         req.session.isLoggedIn = true;
-        req.session.username = sName;
-        req.session.userLevel = users[0].level
+        req.session.email = sEmail;
+        req.session.userLevel = users[0].level;
         res.redirect("/");
       } else {
         res.render("login", { error_message: "Invaild login" });
       }
     })
-    .catch(err => {
+    .catch((err) => {
       console.error("Login error:", err);
       res.render("login", { error_message: "Invalid login" });
     });
@@ -102,7 +101,7 @@ app.get("/login", (req, res) => {
   if (req.session.isLoggedIn) {
     res.redirect("userDashboard");
   } else {
-    res.render("login", { error_message: ""});
+    res.render("login", { error_message: "" });
   }
 });
 
