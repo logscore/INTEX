@@ -19,6 +19,38 @@ app.set("view engine", "ejs");
 // import body-parser to pull data from submitted forms
 const bodyParser = require("body-parser");
 
+// tells express how to read form data in the body of a request
+app.use(express.urlencoded({extended: true}));
+
+// set the session varible
+app.use(
+    session(
+        {
+    secret: process.env.SESSION_SECRET || 'fallback-secret-key',
+    resave: false,
+    saveUninitialized: false,
+        }
+    )
+);
+
+// global authentication middleware
+app.use((req, res, next) => {
+    // Skip authentication for login routes
+    if (req.path === '/' || req.path === '/login' || req.path === '/logout') {
+        //continue with the request path
+        return next();
+    }
+    
+    // Check if user is logged in for all other routes
+    if (req.session.isLoggedIn) {
+        //notice no return because nothing below it
+        next(); // User is logged in, continue
+    } 
+    else {
+        res.render("login", { error_message: "Please log in to access this page" });
+    }
+});
+
 // set up connection to database
 const knex = require("knex")({
   client: "pg",
@@ -57,9 +89,9 @@ app.post("/login", (req, res) => {
 });
 
 // landing page route - check to make sure that the user is logged in first
-app.get("/", (req, res) => {
+app.get("/userDashboard", (req, res) => {
   if (req.session.isLoggedIn) {
-    res.render("index");
+    res.render("userDashboard");
   } else {
     res.redirect("/login");
   }
@@ -68,10 +100,14 @@ app.get("/", (req, res) => {
 // login route - if the user is already logged in, redirect to the landing page, otherwise have the user login
 app.get("/login", (req, res) => {
   if (req.session.isLoggedIn) {
-    res.render("index");
+    res.redirect("userDashboard");
   } else {
     res.render("login", { error_message: ""});
   }
+});
+
+app.get("/", (req, res) => {
+  res.render("index");
 });
 
 app.get("/health", (req, res) => {
