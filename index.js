@@ -7,6 +7,10 @@ const app = express();
 // import express-session to create a session variable
 const session = require("express-session");
 
+
+app.use(express.static('public'));
+
+
 // load environment variables from the .env file
 require("dotenv").config();
 
