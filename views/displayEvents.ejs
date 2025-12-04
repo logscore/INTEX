@@ -56,7 +56,7 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
 
-        /* FOOTER (OFFICIAL) */
+        /* FOOTER */
         .footer {
             background-color: black;
             color: white;
@@ -106,55 +106,59 @@
         </div>
     </nav>
 
-
     <!-- MAIN CONTENT -->
     <div class="container mt-5">
         <h1 class="mb-4 text-center">Upcoming Events</h1>
 
         <% if (events && events.length > 0) { %>
+            <div class="row g-4">
+                <% events.forEach(event => { %>
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card card-custom p-3">
+                            <!-- Event Name -->
+                            <h4><%= event.EventName %></h4>
 
-        <div class="row g-4">
-            <% events.forEach(event => { %>
-                <div class="col-md-6 col-lg-4">
-                    <div class="card card-custom p-3">
-                        <h4><%= event.eventName %></h4>
+                            <!-- Event Date & Time -->
+                            <p class="text-muted mb-1">
+                                <strong>Date:</strong> 
+                                <%= new Date(event.EventDateTimeStart).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %>
+                            </p>
+                            <p class="text-muted mb-1">
+                                <strong>Time:</strong>
+                                <%= new Date(event.EventDateTimeStart).toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true }) %>
+                                - 
+                                <%= new Date(event.EventDateTimeEnd).toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true }) %>
+                            </p>
 
-                        <p class="text-muted mb-1">
-                            <strong>Date:</strong> <%= event.eventDate %>
-                        </p>
+                            <!-- Event Location -->
+                            <p class="text-muted mb-1">
+                                <strong>Location:</strong> <%= event.EventLocation %>
+                            </p>
 
-                        <p class="text-muted mb-1">
-                            <strong>Location:</strong> <%= event.eventLocation %>
-                        </p>
-
-                        <p><%= event.eventDescription %></p>
+                            <!-- Event Description -->
+                            <p><%= event.EventDescription %></p>
+                        </div>
                     </div>
-                </div>
-            <% }) %>
-        </div>
-
+                <% }); %>
+            </div>
         <% } else { %>
-
-        <div class="card card-custom p-4 text-center">
-            <h4>No events have been added yet.</h4>
-            <p>Please check back soon!</p>
-        </div>
-
+            <div class="card card-custom p-4 text-center">
+                <h4>No upcoming events found.</h4>
+                <p>Please check back soon!</p>
+            </div>
         <% } %>
-
     </div>
-
 
     <!-- FOOTER -->
     <div class="footer">
-        <div class="footer-text">
-            Ella
-            <img src="/EllaRises.jpg" alt="Logo" style="width:30px; height:auto; vertical-align: middle;">
-            Rises
-        </div>
+    <div class="footer-text">
+        Ella 
+        <img src="/EllaRises.jpg" alt="Logo" style="width:30px; height:auto; vertical-align: middle;">
+        Rises
+    </div>
     </div>
 
-    <p class="copyright">© 2025 Ella Rises. All Rights Reserved.</p>
+<p class="copyright">© 2025 Ella Rises. All Rights Reserved.</p>
 
 </body>
 </html>
