@@ -35,34 +35,24 @@
         }
 
         /* NAVBAR */
-        .navbar-custom {
-            background-color: white;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-        }
-
         .navbar-brand {
-            font-family: 'DM Serif Display', serif;
-            font-size: 1.8rem;
+            font-weight: bold;
             display: flex;
             align-items: center;
-            gap: 8px;
-            color: var(--gray) !important;
+            gap: 6px;
+            font-size: 1.25rem;
         }
 
-        .nav-right a {
-            margin-left: 15px;
-            color: var(--gray);
-            text-decoration: none;
-            font-weight: 500;
-        }
-
-        .nav-right a:hover {
-            text-decoration: underline;
+        .brand-box {
+            width: 30px;
+            height: 30px;
+            background: white;
+            border-radius: 6px;
+            display: inline-block;
         }
 
         /* PAGE WRAPPER */
         .page-wrapper {
-            margin-top: 120px;
             padding: 40px 20px;
             flex: 1;
         }
@@ -95,16 +85,13 @@
         .btn-white {
             background: white;
             border: 2px solid var(--gray);
-            color: var(--gray);
-            border-radius: 25px;
-            padding: 8px 20px;
-            font-weight: 600;
+            color: var(--gray) !important;
             transition: 0.2s;
         }
 
         .btn-white:hover {
             background: var(--gray);
-            color: white;
+            color: white !important;
         }
 
         /* FOOTER */
@@ -144,18 +131,21 @@
 
 <body>
 
-<!-- NAVBAR -->
-<nav class="navbar navbar-expand-lg navbar-custom fixed-top">
-  <div class="container">
-    <span class="navbar-brand">
-      Ella Rises
-      <img src="/fulllogo.jpg" alt="Ella Rises Logo" style="width:35px; height:35px; object-fit: contain; vertical-align: text-bottom; margin-left: 8px;">
-    </span>
 
-    <div class="nav-right d-none d-lg-flex">
-      <a href="/logout">Logout</a>
-      <a href="/userDashboard">Back to Dashboard</a>
-    </div>
+<!-- NAVBAR -->
+<nav class="navbar navbar-light bg-white shadow-sm px-4">
+  <a class="navbar-brand" href="/">
+    Ella
+    <img src="/fulllogo.jpg" alt="Ella Rises Logo" style="width:35px; height:35px; object-fit: contain; vertical-align: text-bottom; margin-left: 8px;">
+    Rises
+  </a>
+
+  <div>
+    <% if (userLevel === 'M') { %>
+      <a href="/tableauDashboard" class="btn btn-white btn-sm me-2">Tableau Insights</a>
+    <% } %>
+    <a href="/userDashboard" class="btn btn-white btn-sm me-2">Back to Dashboard</a>
+    <a href="/logout" class="btn btn-white btn-sm">Logout</a>
   </div>
 </nav>
 
