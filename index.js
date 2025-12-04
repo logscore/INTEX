@@ -76,7 +76,7 @@ app.post("/login", (req, res) => {
         req.session.isLoggedIn = true;
         req.session.email = sEmail;
         req.session.userLevel = users[0].level;
-        res.redirect("/");
+        res.redirect("/userDashboard");
       } else {
         res.render("login", { error_message: "Invaild login" });
       }
