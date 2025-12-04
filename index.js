@@ -74,10 +74,10 @@ app.post("/login", (req, res) => {
     });
   }
 
-  knex("users")
-    .select("email", "password", "level")
-    .where("email", sEmail)
-    .andWhere("password", sPassword)
+  knex("Users")
+    .select("Email", "Password", "Level")
+    .where("Email", sEmail)
+    .andWhere("Password", sPassword)
     .then((users) => {
       if (users.length > 0 && users[0].password === sPassword) {
         req.session.isLoggedIn = true;
