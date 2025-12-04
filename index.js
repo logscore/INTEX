@@ -414,7 +414,11 @@ app.get("/displayParticipants", async (req, res) => {
 });
 
 app.get("/displayUsers", (req, res) => {
-  res.render("displayUsers");
+  if (!req.session.isLoggedIn) return res.redirect("/login");
+  
+  res.render("displayUsers", {
+    userLevel: req.session.userLevel || null
+  });
 });
 
 app.get("/editUser", (req, res) => {
