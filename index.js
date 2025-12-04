@@ -7,9 +7,7 @@ const app = express();
 // import express-session to create a session variable
 const session = require("express-session");
 
-
-app.use(express.static('public'));
-
+app.use(express.static("public"));
 
 // load environment variables from the .env file
 require("dotenv").config();
@@ -69,7 +67,7 @@ app.post("/login", (req, res) => {
   let sPassword = req.body.password;
 
   knex("Users")
-    .select("Email", "Password", ":evel")
+    .select("Email", "Password", "Level")
     .where("Email", sEmail)
     .andWhere("Password", sPassword)
     .then((users) => {
@@ -165,7 +163,6 @@ app.get("/userDashboard", async (req, res) => {
     });
   }
 });
-
 
 // ==============================
 // DISPLAY FUTURE EVENTS
