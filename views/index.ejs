@@ -122,17 +122,15 @@
   }
 
   /* IMAGE PLACEHOLDERS */
-  .img-placeholder {
-    background: var(--cream);
-    border: 2px dashed var(--gray);
-    border-radius: 15px;
-    height: 220px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--gray);
-    font-weight: bold;
-  }
+.img-placeholder {
+    width: 100%;             /* Make image fill the width of the white card */
+    height: 200px;           /* FORCE all images to be the same height */
+    object-fit: cover;       /* The Magic Line: Crops the image so it doesn't squish */
+    border: none;            /* Removes the dotted border */
+    border-radius: 10px;     /* Rounds the corners to look nice */
+    display: block;          /* Required for centering */
+    margin: 0 auto;          /* Centers the image horizontally */
+}
 
   /* PROGRAM CARDS */
   .program-card {
@@ -251,28 +249,32 @@
 
     <div class="col-md-6 col-lg-3">
       <div class="program-card">
-        <div class="img-placeholder">Program Image</div>
+        <!-- Anders putting in images -->
+        <img src="/BalletImage.jpeg" alt="Ballet Event" class="img-placeholder">
         <h4>Ballet Folklorico</h4>
       </div>
     </div>
 
     <div class="col-md-6 col-lg-3">
       <div class="program-card">
-        <div class="img-placeholder">Program Image</div>
+        <!-- Anders putting in images -->
+        <img src="/Mariachi.jpeg" alt="Mariachi Event" class="img-placeholder">
         <h4>Mariachi</h4>
       </div>
     </div>
 
     <div class="col-md-6 col-lg-3">
       <div class="program-card">
-        <div class="img-placeholder">Program Image</div>
+        <!-- Anders putting in images -->
+        <img src="/SummitImage.jpg" alt="Summit Event" class="img-placeholder">
         <h4>Summit + Educational Pathways</h4>
       </div>
     </div>
 
     <div class="col-md-6 col-lg-3">
       <div class="program-card">
-        <div class="img-placeholder">Program Image</div>
+        <!-- Anders putting in images -->
+        <img src="/SteamImage.jpeg" alt="STEAM Event" class="img-placeholder">
         <h4>STEAM</h4>
       </div>
     </div>
@@ -287,7 +289,8 @@
 <section id="donate" class="container">
   <h2 class="section-title">Support Our Mission</h2>
 
-  <div class="img-placeholder">DONATION IMAGE HERE</div>
+  <!-- Anders putting in images -->
+  <img src="/Donate.jpeg" alt="Donate" class="img-placeholder">
 
   <div class="text-center mt-4">
     <a href="/https://givebutter.com/EllaRises" class="btn btn-donate">Donate Now</a>
