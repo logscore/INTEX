@@ -57,6 +57,9 @@ const knex = require("knex")({
     database: process.env.POSTGRES_DATABASE,
     port: process.env.POSTGRES_PORT,
   },
+  ssl: {
+    rejectUnauthorized: process.env.NODE_ENV === "production" ? true : false,
+  },
 });
 
 // ==============================
@@ -67,7 +70,9 @@ app.post("/login", (req, res) => {
   let sPassword = req.body.password || "";
 
   if (!sEmail || !sPassword) {
-    return res.render("login", { error_message: "Please enter email and password" });
+    return res.render("login", {
+      error_message: "Please enter email and password",
+    });
   }
 
   knex("Users")
@@ -89,7 +94,9 @@ app.post("/login", (req, res) => {
     })
     .catch((err) => {
       console.error("Login error:", err);
-      res.render("login", { error_message: "Database error. Please try again." });
+      res.render("login", {
+        error_message: "Database error. Please try again.",
+      });
     });
 });
 
@@ -157,14 +164,18 @@ app.get("/userDashboard", async (req, res) => {
     const surveys = await knex("Surveys as s")
       .join("Registrations as r", "r.RegistrationID", "s.RegistrationID")
       .join("participants as p", "p.ParticipantID", "r.ParticipantID")
-      .leftJoin("EventOccurences as e", "e.EventOccurrenceID", "r.EventOccurrenceID")
+      .leftJoin(
+        "EventOccurences as e",
+        "e.EventOccurrenceID",
+        "r.EventOccurrenceID",
+      )
       .select(
         "s.SurveyID",
         "s.SurveyOverallScore",
         "s.SurveyComments",
         "s.SurveySubmissionDate",
         "e.EventName",
-        "r.RegistrationID"
+        "r.RegistrationID",
       )
       .where("p.ParticipantEmail", userEmail)
       .orderBy("s.SurveySubmissionDate", "desc");
@@ -229,7 +240,11 @@ app.get("/displaySurveys", async (req, res) => {
 
     const registrations = await knex("registrations as r")
       .join("participants as p", "p.ParticipantID", "r.ParticipantID")
-      .join("EventOccurences as e", "e.EventOccurrenceID", "r.EventOccurrenceID")
+      .join(
+        "EventOccurences as e",
+        "e.EventOccurrenceID",
+        "r.EventOccurrenceID",
+      )
       .select("r.RegistrationID", "e.EventName", "e.EventDateTimeStart")
       .where("p.ParticipantEmail", userEmail)
       .orderBy("e.EventDateTimeStart", "asc");
@@ -246,16 +261,27 @@ app.post("/submitSurvey", async (req, res) => {
   if (!req.session.isLoggedIn) return res.redirect("/login");
 
   const registrationId = parseInt(req.body.registrationId, 10);
-  const satisfaction = req.body.satisfaction ? parseFloat(req.body.satisfaction) : null;
-  const usefulness = req.body.usefulness ? parseFloat(req.body.usefulness) : null;
-  const instructor = req.body.instructor ? parseFloat(req.body.instructor) : null;
+  const satisfaction = req.body.satisfaction
+    ? parseFloat(req.body.satisfaction)
+    : null;
+  const usefulness = req.body.usefulness
+    ? parseFloat(req.body.usefulness)
+    : null;
+  const instructor = req.body.instructor
+    ? parseFloat(req.body.instructor)
+    : null;
   const recommend = req.body.recommend ? parseFloat(req.body.recommend) : null;
   const comments = req.body.comments ? req.body.comments.trim() : null;
 
   try {
     // compute overall as average of provided numeric scores (ignore nulls)
-    const scores = [satisfaction, usefulness, instructor, recommend].filter((s) => s !== null && !isNaN(s));
-    const overall = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : null;
+    const scores = [satisfaction, usefulness, instructor, recommend].filter(
+      (s) => s !== null && !isNaN(s),
+    );
+    const overall =
+      scores.length > 0
+        ? scores.reduce((a, b) => a + b, 0) / scores.length
+        : null;
 
     let npsBucket = null;
     if (overall !== null) {
@@ -266,7 +292,7 @@ app.post("/submitSurvey", async (req, res) => {
 
     // Determine next SurveyID (table uses integer primary keys without sequence)
     const maxRow = await knex("Surveys").max("SurveyID as max").first();
-    const nextId = (maxRow && maxRow.max) ? parseInt(maxRow.max, 10) + 1 : 1;
+    const nextId = maxRow && maxRow.max ? parseInt(maxRow.max, 10) + 1 : 1;
 
     await knex("Surveys").insert({
       SurveyID: nextId,
@@ -296,25 +322,33 @@ app.get("/displayParticipants", async (req, res) => {
     const userEmail = req.session.email;
 
     // Admins can view all participants by visiting /displayParticipants?all=true
-    if (req.session.userLevel && req.session.userLevel === "admin" && req.query.all === "true") {
-      const participants = await knex("Participants").select(
-        "ParticipantID",
-        "ParticipantEmail",
-        "ParticipantFirstName",
-        "ParticipantLastName",
-        "ParticipantPhone",
-        "ParticipantCity",
-        "ParticipantState",
-        "ParticipantSchoolOrEmployer",
-        "ParticipantFieldOfInterest",
-        "TotalDonations"
-      ).orderBy("ParticipantLastName", "asc");
+    if (
+      req.session.userLevel &&
+      req.session.userLevel === "admin" &&
+      req.query.all === "true"
+    ) {
+      const participants = await knex("Participants")
+        .select(
+          "ParticipantID",
+          "ParticipantEmail",
+          "ParticipantFirstName",
+          "ParticipantLastName",
+          "ParticipantPhone",
+          "ParticipantCity",
+          "ParticipantState",
+          "ParticipantSchoolOrEmployer",
+          "ParticipantFieldOfInterest",
+          "TotalDonations",
+        )
+        .orderBy("ParticipantLastName", "asc");
 
       return res.render("displayParticipants", { participants });
     }
 
     // Regular users: fetch their participant record by email
-    const participant = await knex("Participants").where("ParticipantEmail", userEmail).first();
+    const participant = await knex("Participants")
+      .where("ParticipantEmail", userEmail)
+      .first();
 
     res.render("displayParticipants", { participant });
   } catch (err) {
