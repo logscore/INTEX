@@ -7,11 +7,12 @@ DROP TABLE IF EXISTS Registrations CASCADE;
 DROP TABLE IF EXISTS EventOccurences CASCADE;
 DROP TABLE IF EXISTS EventTemplates CASCADE;
 DROP TABLE IF EXISTS Participants CASCADE;
+DROP TABLE IF EXISTS Users CASCADE;
 
-CREATE TABLE users (id INTEGER PRIMARY KEY, email TEXT, password TEXT, level TEXT);
+CREATE TABLE Users (ID INTEGER PRIMARY KEY, Email TEXT, Password TEXT, Level TEXT);
 
 -- WARNING: Storing plaintext passwords is a security risk. Use bcrypt or similar in production.
-INSERT INTO users (id, email, password, level) VALUES
+INSERT INTO Users (ID, Email, Password, Level) VALUES
 (1, 'user@gmail.com', 'password123', 'U'),
 (2, 'manager@gmail.com', 'password123', 'M');
 
