@@ -56,10 +56,31 @@ const knex = require("knex")({
     password: process.env.POSTGRES_PASSWORD,
     database: process.env.POSTGRES_DATABASE,
     port: process.env.POSTGRES_PORT,
-    ssl: { rejectUnauthorized: false },
   },
   wrapIdentifier: (value, origImpl) => origImpl(value.toLowerCase()),
 });
+
+// Helper: normalize a participant DB row (which may have lowercase keys from PG)
+function normalizeParticipantRow(row) {
+  if (!row) return null;
+  return {
+    ParticipantID: row.ParticipantID || row.participantid || row.participant_id || null,
+    ParticipantEmail: row.ParticipantEmail || row.participantemail || row.participant_email || null,
+    ParticipantFirstName: row.ParticipantFirstName || row.participantfirstname || row.participant_first_name || null,
+    ParticipantLastName: row.ParticipantLastName || row.participantlastname || row.participant_last_name || null,
+    ParticipantDOB: row.ParticipantDOB || row.participantdob || row.participant_dob || null,
+    ParticipantRole: row.ParticipantRole || row.participantrole || row.participant_role || null,
+    ParticipantPhone: row.ParticipantPhone || row.participantphone || row.participant_phone || null,
+    ParticipantCity: row.ParticipantCity || row.participantcity || row.participant_city || null,
+    ParticipantState: row.ParticipantState || row.participantstate || row.participant_state || null,
+    ParticipantZip: row.ParticipantZip || row.participantzip || row.participant_zip || null,
+    ParticipantSchoolOrEmployer:
+      row.ParticipantSchoolOrEmployer || row.participantschooloremployer || row.participant_school_or_employer || null,
+    ParticipantFieldOfInterest:
+      row.ParticipantFieldOfInterest || row.participantfieldofinterest || row.participant_field_of_interest || null,
+    TotalDonations: row.TotalDonations !== undefined ? row.TotalDonations : row.totaldonations !== undefined ? row.totaldonations : null,
+  };
+}
 
 // ==============================
 // LOGIN
@@ -320,39 +341,61 @@ app.get("/displayParticipants", async (req, res) => {
   try {
     const userEmail = req.session.email;
 
-    // Admins can view all participants by visiting /displayParticipants?all=true
-    if (
-      req.session.userLevel &&
-      req.session.userLevel === "admin" &&
-      req.query.all === "true"
-    ) {
+    // no-op: proceed with session values (no debug output)
+
+    // Normalize session level to uppercase for comparison (DB uses 'M' or 'U')
+    const userLevel = (req.session.userLevel || "").toString().toUpperCase();
+
+    // Admin/Manager users ('M') can view participants. Show all by default for 'M'.
+    if (userLevel === "M") {
+      // If an id is provided, show single participant detail
+      if (req.query.id) {
+        const id = parseInt(req.query.id, 10);
+        if (!isNaN(id)) {
+          let participantById = await knex("Participants")
+            .where("ParticipantID", id)
+            .first();
+
+          participantById = normalizeParticipantRow(participantById);
+
+          return res.render("displayParticipants", { participant: participantById, userLevel });
+        }
+      }
+
+      // Otherwise show the full participant list for managers
       const participants = await knex("Participants")
         .select(
           "ParticipantID",
           "ParticipantEmail",
           "ParticipantFirstName",
           "ParticipantLastName",
+          "ParticipantDOB",
+          "ParticipantRole",
           "ParticipantPhone",
           "ParticipantCity",
           "ParticipantState",
+          "ParticipantZip",
           "ParticipantSchoolOrEmployer",
           "ParticipantFieldOfInterest",
           "TotalDonations",
         )
         .orderBy("ParticipantLastName", "asc");
 
-      return res.render("displayParticipants", { participants });
+      const normalized = participants.map(normalizeParticipantRow);
+      return res.render("displayParticipants", { participants: normalized, userLevel });
     }
 
     // Regular users: fetch their participant record by email
-    const participant = await knex("Participants")
+    let participant = await knex("Participants")
       .where("ParticipantEmail", userEmail)
       .first();
 
-    res.render("displayParticipants", { participant });
+    participant = normalizeParticipantRow(participant);
+
+    res.render("displayParticipants", { participant, userLevel });
   } catch (err) {
     console.error("Error loading participants:", err);
-    res.render("displayParticipants", { participant: null });
+    res.render("displayParticipants", { participant: null, userLevel: (req.session.userLevel||"").toString().toUpperCase() });
   }
 });
 

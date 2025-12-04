@@ -24,14 +24,17 @@
           <div class="card p-3 mb-4">
             <h4>All Participants</h4>
             <div class="table-responsive">
-              <table class="table">
+              <table class="table table-sm">
                 <thead class="table-dark">
                   <tr>
                     <th>Name</th>
                     <th>Email</th>
+                    <th>DOB</th>
+                    <th>Role</th>
                     <th>Phone</th>
                     <th>City</th>
                     <th>State</th>
+                    <th>Zip</th>
                     <th>School/Employer</th>
                     <th>Field</th>
                     <th>Donations</th>
@@ -40,11 +43,14 @@
                 <tbody>
                   <% participants.forEach(function(p) { %>
                     <tr>
-                      <td><%= p.ParticipantFirstName %> <%= p.ParticipantLastName %></td>
+                      <td><a href="/displayParticipants?id=<%= p.ParticipantID %>"><%= p.ParticipantFirstName %> <%= p.ParticipantLastName %></a></td>
                       <td><%= p.ParticipantEmail %></td>
+                      <td><%= p.ParticipantDOB ? new Date(p.ParticipantDOB).toLocaleDateString() : '—' %></td>
+                      <td><%= p.ParticipantRole || '—' %></td>
                       <td><%= p.ParticipantPhone || '—' %></td>
                       <td><%= p.ParticipantCity || '—' %></td>
                       <td><%= p.ParticipantState || '—' %></td>
+                      <td><%= p.ParticipantZip || '—' %></td>
                       <td><%= p.ParticipantSchoolOrEmployer || '—' %></td>
                       <td><%= p.ParticipantFieldOfInterest || '—' %></td>
                       <td>$<%= p.TotalDonations !== null ? p.TotalDonations : '0.00' %></td>
@@ -56,12 +62,13 @@
           </div>
         <% } else if (typeof participant !== 'undefined' && participant && participant.ParticipantID) { %>
           <div class="card p-4 mb-4">
-            <h4><%= participant.ParticipantFirstName %> <%= participant.ParticipantLastName %></h4>
+            <h4><%= participant.ParticipantFirstName %> <%= participant.ParticipantLastName %> <small class="text-muted">(ID: <%= participant.ParticipantID %>)</small></h4>
             <div class="row mt-3">
               <div class="col-md-6">
                 <p><span class="label">Email:</span> <%= participant.ParticipantEmail %></p>
                 <p><span class="label">Phone:</span> <%= participant.ParticipantPhone || '—' %></p>
                 <p><span class="label">DOB:</span> <%= participant.ParticipantDOB ? new Date(participant.ParticipantDOB).toLocaleDateString() : '—' %></p>
+                <p><span class="label">Role:</span> <%= participant.ParticipantRole || '—' %></p>
               </div>
               <div class="col-md-6">
                 <p><span class="label">City:</span> <%= participant.ParticipantCity || '—' %></p>
