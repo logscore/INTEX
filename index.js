@@ -413,12 +413,23 @@ app.get("/displayParticipants", async (req, res) => {
   }
 });
 
-app.get("/displayUsers", (req, res) => {
+app.get("/displayUsers", async (req, res) => {
   if (!req.session.isLoggedIn) return res.redirect("/login");
   
-  res.render("displayUsers", {
-    userLevel: req.session.userLevel || null
-  });
+  try {
+    const users = await knex("Participant").select("*");
+    
+    res.render("displayUsers", {
+      userLevel: req.session.userLevel || null,
+      users: users || []
+    });
+  } catch (err) {
+    console.error("Error loading users:", err);
+    res.render("displayUsers", {
+      userLevel: req.session.userLevel || null,
+      users: []
+    });
+  }
 });
 
 app.get("/editUser", (req, res) => {
