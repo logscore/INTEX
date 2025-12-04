@@ -55,8 +55,7 @@ const knex = require("knex")({
     user: process.env.POSTGRES_USER,
     password: process.env.POSTGRES_PASSWORD,
     database: process.env.POSTGRES_DATABASE,
-    port: process.env.POSTGRES_PORT,
-    ssl: { rejectUnauthorized: false }
+    port: process.env.POSTGRES_PORT
   },
   wrapIdentifier: (value, origImpl) => origImpl(value.toLowerCase())
 });
@@ -384,7 +383,30 @@ app.get("/displaySurveys", async (req, res) => {
         }
       });
 
-      return res.render("displaySurveys", { groupedSurveys: groupedByEvent, userLevel });
+        // Fetch all participants and registrations for add survey form
+        const participants = await knex("Participants")
+          .select("ParticipantID", "ParticipantFirstName", "ParticipantLastName", "ParticipantEmail")
+          .orderBy("ParticipantLastName", "asc");
+      
+        const registrations = await knex("Registrations as r")
+          .join("Participants as p", "p.ParticipantID", "r.ParticipantID")
+          .join("EventOccurences as e", "e.EventOccurrenceID", "r.EventOccurrenceID")
+          .select(
+            "r.RegistrationID",
+            "p.ParticipantFirstName",
+            "p.ParticipantLastName",
+            "p.ParticipantEmail",
+            "e.EventName",
+            "e.EventDateTimeStart"
+          )
+          .orderBy("e.EventName", "asc");
+
+        return res.render("displaySurveys", { 
+          groupedSurveys: groupedByEvent, 
+          participants: participants.map(normalizeParticipantRow),
+          registrations,
+          userLevel 
+        });
     }
 
     // Regular users: show their registrations so they can submit surveys
@@ -406,6 +428,111 @@ app.get("/displaySurveys", async (req, res) => {
   }
 });
 
+
+// Accept survey submissions
+// Create new survey (admin only)
+app.post('/createSurvey', async (req, res) => {
+  if (!req.session.isLoggedIn) return res.redirect('/login');
+
+  const userLevel = (req.session.userLevel || '').toString().toUpperCase();
+  if (userLevel !== 'M') return res.status(403).send('Forbidden');
+
+  try {
+    const { registrationId, satisfaction, usefulness, instructor, recommend, comments } = req.body;
+
+    const satisfactionScore = satisfaction ? parseFloat(satisfaction) : null;
+    const usefulnessScore = usefulness ? parseFloat(usefulness) : null;
+    const instructorScore = instructor ? parseFloat(instructor) : null;
+    const recommendScore = recommend ? parseFloat(recommend) : null;
+
+    // Compute overall score
+    const scores = [satisfactionScore, usefulnessScore, instructorScore, recommendScore].filter(
+      (s) => s !== null && !isNaN(s)
+    );
+    const overall = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : null;
+
+    // Determine NPS bucket
+    let npsBucket = null;
+    if (overall !== null) {
+      if (overall >= 4.5) npsBucket = 'Promoter';
+      else if (overall >= 3.0) npsBucket = 'Passive';
+      else npsBucket = 'Detractor';
+    }
+
+    // Get next SurveyID
+    const maxRow = await knex('Surveys').max('SurveyID as max').first();
+    const nextId = maxRow && maxRow.max ? parseInt(maxRow.max, 10) + 1 : 1;
+
+    await knex('Surveys').insert({
+      SurveyID: nextId,
+      RegistrationID: parseInt(registrationId, 10),
+      SurveySatisfactionScore: satisfactionScore,
+      SurveyUsefulnessScore: usefulnessScore,
+      SurveyInstructorScore: instructorScore,
+      SurveyRecommendationScore: recommendScore,
+      SurveyOverallScore: overall,
+      SurveyNPSBucket: npsBucket,
+      SurveyComments: comments ? comments.trim() : null,
+      SurveySubmissionDate: new Date(),
+    });
+
+    return res.redirect('/displaySurveys');
+  } catch (err) {
+    console.error('Error creating survey:', err);
+    return res.redirect('/displaySurveys');
+  }
+});
+
+// Update survey (admin only)
+app.post('/updateSurvey', async (req, res) => {
+  if (!req.session.isLoggedIn) return res.redirect('/login');
+
+  const userLevel = (req.session.userLevel || '').toString().toUpperCase();
+  if (userLevel !== 'M') return res.status(403).send('Forbidden');
+
+  const surveyId = parseInt(req.body.surveyId, 10);
+  if (isNaN(surveyId)) return res.redirect('/displaySurveys');
+
+  try {
+    const { satisfaction, usefulness, instructor, recommend, comments } = req.body;
+
+    const satisfactionScore = satisfaction ? parseFloat(satisfaction) : null;
+    const usefulnessScore = usefulness ? parseFloat(usefulness) : null;
+    const instructorScore = instructor ? parseFloat(instructor) : null;
+    const recommendScore = recommend ? parseFloat(recommend) : null;
+
+    // Compute overall score
+    const scores = [satisfactionScore, usefulnessScore, instructorScore, recommendScore].filter(
+      (s) => s !== null && !isNaN(s)
+    );
+    const overall = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : null;
+
+    // Determine NPS bucket
+    let npsBucket = null;
+    if (overall !== null) {
+      if (overall >= 4.5) npsBucket = 'Promoter';
+      else if (overall >= 3.0) npsBucket = 'Passive';
+      else npsBucket = 'Detractor';
+    }
+
+    await knex('Surveys')
+      .where('SurveyID', surveyId)
+      .update({
+        SurveySatisfactionScore: satisfactionScore,
+        SurveyUsefulnessScore: usefulnessScore,
+        SurveyInstructorScore: instructorScore,
+        SurveyRecommendationScore: recommendScore,
+        SurveyOverallScore: overall,
+        SurveyNPSBucket: npsBucket,
+        SurveyComments: comments ? comments.trim() : null,
+      });
+
+    return res.redirect(`/displaySurveys?id=${surveyId}`);
+  } catch (err) {
+    console.error('Error updating survey:', err);
+    return res.redirect('/displaySurveys');
+  }
+});
 
 // Accept survey submissions
 app.post("/submitSurvey", async (req, res) => {
@@ -515,7 +642,23 @@ app.get("/displayParticipants", async (req, res) => {
 
           participantById = normalizeParticipantRow(participantById);
 
-          return res.render("displayParticipants", { participant: participantById, userLevel });
+          // Fetch milestones for this participant
+          const milestones = await knex("Milestones")
+            .where("ParticipantID", id)
+            .orderBy("MilestoneDate", "desc");
+
+          const normalizedMilestones = milestones.map((m) => ({
+            MilestoneID: m.milestoneid || m.MilestoneID || null,
+            ParticipantID: m.participantid || m.ParticipantID || null,
+            MilestoneTitle: m.milestonetitle || m.MilestoneTitle || null,
+            MilestoneDate: m.milestonedate || m.MilestoneDate || null,
+          }));
+
+          return res.render("displayParticipants", { 
+            participant: participantById, 
+            milestones: normalizedMilestones,
+            userLevel 
+          });
         }
       }
 
@@ -694,12 +837,73 @@ app.post("/addMilestone", async (req, res) => {
   }
 });
 
+// Add milestone for a participant (admin only)
+app.post("/addParticipantMilestone", async (req, res) => {
+  if (!req.session.isLoggedIn) return res.redirect("/login");
+
+  const userLevel = (req.session.userLevel || "").toString().toUpperCase();
+  if (userLevel !== "M") return res.status(403).send("Forbidden");
+
+  try {
+    const { participantId, milestoneTitle, milestoneDate } = req.body;
+
+    if (!participantId || !milestoneTitle || !milestoneDate) {
+      return res.redirect(`/displayParticipants?id=${participantId}`);
+    }
+
+    // Get next MilestoneID
+    const maxMilestone = await knex("Milestones").max("MilestoneID").first();
+    const currentMax = Object.values(maxMilestone)[0] || 0;
+    const nextId = currentMax + 1;
+
+    await knex("Milestones").insert({
+      MilestoneID: nextId,
+      ParticipantID: parseInt(participantId, 10),
+      MilestoneTitle: milestoneTitle.trim(),
+      MilestoneDate: milestoneDate,
+    });
+
+    res.redirect(`/displayParticipants?id=${participantId}`);
+  } catch (err) {
+    console.error("Error adding milestone:", err);
+    res.redirect("/displayParticipants");
+  }
+});
+
+// Edit milestone for a participant (admin only)
+app.post("/editParticipantMilestone", async (req, res) => {
+  if (!req.session.isLoggedIn) return res.redirect("/login");
+
+  const userLevel = (req.session.userLevel || "").toString().toUpperCase();
+  if (userLevel !== "M") return res.status(403).send("Forbidden");
+
+  try {
+    const { milestoneId, participantId, milestoneTitle, milestoneDate } = req.body;
+
+    if (!milestoneId || !participantId) {
+      return res.redirect("/displayParticipants");
+    }
+
+    await knex("Milestones")
+      .where("MilestoneID", parseInt(milestoneId, 10))
+      .update({
+        MilestoneTitle: milestoneTitle.trim(),
+        MilestoneDate: milestoneDate,
+      });
+
+    res.redirect(`/displayParticipants?id=${participantId}`);
+  } catch (err) {
+    console.error("Error editing milestone:", err);
+    res.redirect("/displayParticipants");
+  }
+});
+
 // Delete a milestone
 app.post("/deleteMilestone", async (req, res) => {
   if (!req.session.isLoggedIn) return res.redirect("/login");
 
   try {
-    const { milestoneId } = req.body;
+    const { milestoneId, participantId } = req.body;
 
     if (!milestoneId) {
       return res.redirect("/displayMilestones");
@@ -710,9 +914,17 @@ app.post("/deleteMilestone", async (req, res) => {
       .where("MilestoneID", parseInt(milestoneId, 10))
       .del();
 
+    // Redirect to participant view if participantId is provided
+    if (participantId) {
+      return res.redirect(`/displayParticipants?id=${participantId}`);
+    }
+
     res.redirect("/displayMilestones");
   } catch (err) {
     console.error("Error deleting milestone:", err);
+    if (req.body.participantId) {
+      return res.redirect(`/displayParticipants?id=${req.body.participantId}`);
+    }
     res.redirect("/displayMilestones");
   }
 });
@@ -730,6 +942,76 @@ app.get("/logout", (req, res) => {
     if (err) console.log(err);
     res.redirect("/");
   });
+});
+
+// Create new participant (admin only)
+app.post('/createParticipant', async (req, res) => {
+  if (!req.session.isLoggedIn) return res.redirect('/login');
+
+  const userLevel = (req.session.userLevel || '').toString().toUpperCase();
+  if (userLevel !== 'M') return res.status(403).send('Forbidden');
+
+  try {
+    // Get next ParticipantID
+    const maxParticipant = await knex('Participants').max('ParticipantID').first();
+    const currentMax = Object.values(maxParticipant)[0] || 0;
+    const nextId = currentMax + 1;
+
+    await knex('Participants').insert({
+      ParticipantID: nextId,
+      ParticipantFirstName: req.body.firstName || null,
+      ParticipantLastName: req.body.lastName || null,
+      ParticipantEmail: req.body.email || null,
+      ParticipantPhone: req.body.phone || null,
+      ParticipantDOB: req.body.dob || null,
+      ParticipantRole: req.body.role || null,
+      ParticipantCity: req.body.city || null,
+      ParticipantState: req.body.state || null,
+      ParticipantZip: req.body.zip || null,
+      ParticipantSchoolOrEmployer: req.body.schoolOrEmployer || null,
+      ParticipantFieldOfInterest: req.body.fieldOfInterest || null,
+      TotalDonations: 0,
+    });
+
+    return res.redirect('/displayParticipants');
+  } catch (err) {
+    console.error('Error creating participant:', err);
+    return res.redirect('/displayParticipants');
+  }
+});
+
+// Update participant (admin only)
+app.post('/updateParticipant', async (req, res) => {
+  if (!req.session.isLoggedIn) return res.redirect('/login');
+
+  const userLevel = (req.session.userLevel || '').toString().toUpperCase();
+  if (userLevel !== 'M') return res.status(403).send('Forbidden');
+
+  const id = parseInt(req.body.participantId, 10);
+  if (isNaN(id)) return res.redirect('/displayParticipants');
+
+  try {
+    await knex('Participants')
+      .where('ParticipantID', id)
+      .update({
+        ParticipantFirstName: req.body.firstName || null,
+        ParticipantLastName: req.body.lastName || null,
+        ParticipantEmail: req.body.email || null,
+        ParticipantPhone: req.body.phone || null,
+        ParticipantDOB: req.body.dob || null,
+        ParticipantRole: req.body.role || null,
+        ParticipantCity: req.body.city || null,
+        ParticipantState: req.body.state || null,
+        ParticipantZip: req.body.zip || null,
+        ParticipantSchoolOrEmployer: req.body.schoolOrEmployer || null,
+        ParticipantFieldOfInterest: req.body.fieldOfInterest || null,
+      });
+
+    return res.redirect(`/displayParticipants?id=${id}`);
+  } catch (err) {
+    console.error('Error updating participant:', err);
+    return res.redirect('/displayParticipants');
+  }
 });
 
 // Delete participant (admin only)
