@@ -25,7 +25,7 @@ app.use(
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
-  })
+  }),
 );
 
 // global authentication middleware
@@ -64,10 +64,10 @@ app.post("/login", (req, res) => {
   let sEmail = req.body.email;
   let sPassword = req.body.password;
 
-  knex("public.users")
-    .select("email", "password", "level")
-    .where("email", sEmail)
-    .andWhere("password", sPassword)
+  knex("Users")
+    .select("Email", "Password", ":evel")
+    .where("Email", sEmail)
+    .andWhere("Password", sPassword)
     .then((users) => {
       if (users.length > 0) {
         req.session.isLoggedIn = true;
@@ -106,14 +106,18 @@ app.get("/userDashboard", async (req, res) => {
     // 2. Get registered events
     // --------------------------------------------------------
     const registeredEvents = await knex("registrations as r")
-      .join("EventOccurences as e", "e.EventOccurrenceID", "r.EventOccurrenceID")
+      .join(
+        "EventOccurences as e",
+        "e.EventOccurrenceID",
+        "r.EventOccurrenceID",
+      )
       .join("participants as p", "p.ParticipantID", "r.ParticipantID")
       .select(
         "e.EventName",
         "e.EventDateTimeStart",
         "e.EventLocation",
         "e.EventDescription",
-        "e.EventOccurrenceID"
+        "e.EventOccurrenceID",
       )
       .where("p.ParticipantEmail", userEmail)
       .orderBy("e.EventDateTimeStart", "asc");
@@ -174,21 +178,19 @@ app.get("/displayEvents", async (req, res) => {
         "EventDateTimeStart",
         "EventDateTimeEnd",
         "EventLocation",
-        "EventCapacity"
+        "EventCapacity",
       )
       .where("EventDateTimeStart", ">", today)
       .orderBy("EventDateTimeStart", "asc");
 
     res.render("displayEvents", {
-      events: futureEvents, 
+      events: futureEvents,
     });
-
   } catch (err) {
     console.error("Error loading events:", err);
     res.render("displayEvents", { events: [] });
   }
 });
-
 
 // ==============================
 // MISC ROUTES
