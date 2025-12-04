@@ -62,6 +62,45 @@ const knex = require("knex")({
 });
 
 // ==============================
+// HOME PAGE (Public Landing Page)
+// ==============================
+app.get("/", async (req, res) => {
+  try {
+    const today = new Date();
+
+    // Pull upcoming events for the homepage
+    const events = await knex("EventOccurences")
+      .select(
+        "EventOccurrenceID",
+        "EventName",
+        "EventDateTimeStart",
+        "EventDateTimeEnd",
+        "EventLocation"
+      )
+      .where("EventDateTimeStart", ">", today)
+      .orderBy("EventDateTimeStart", "asc")
+      .limit(6);
+
+    res.render("index", {
+      events,
+      isLoggedIn: req.session.isLoggedIn || false,
+      userEmail: req.session.email || null,
+      userLevel: req.session.userLevel || null
+    });
+
+  } catch (err) {
+    console.error("Error loading homepage:", err);
+
+    res.render("index", {
+      events: [],
+      isLoggedIn: req.session.isLoggedIn || false,
+      userEmail: req.session.email || null,
+      userLevel: req.session.userLevel || null
+    });
+  }
+});
+
+// ==============================
 // LOGIN
 // ==============================
 app.post("/login", (req, res) => {
@@ -106,24 +145,11 @@ app.get("/userDashboard", async (req, res) => {
   if (!req.session.isLoggedIn) return res.redirect("/login");
 
   const userEmail = req.session.email;
-  const userLevel = req.session.userLevel; // <-- grab user level from session
+  const userLevel = req.session.userLevel;
 
   try {
-    // --------------------------------------------------------
-    // 1. Get participant ID (TEMP: waiting for login migration)
-    // --------------------------------------------------------
-    // When login switches to participants, this becomes:
-    // const participant = await knex("participants").where("ParticipantEmail", userEmail).first();
-
-    // --------------------------------------------------------
-    // 2. Get registered events
-    // --------------------------------------------------------
     const registeredEvents = await knex("registrations as r")
-      .join(
-        "EventOccurences as e",
-        "e.EventOccurrenceID",
-        "r.EventOccurrenceID",
-      )
+      .join("EventOccurences as e", "e.EventOccurrenceID", "r.EventOccurrenceID")
       .join("participants as p", "p.ParticipantID", "r.ParticipantID")
       .select(
         "e.EventName",
@@ -135,9 +161,6 @@ app.get("/userDashboard", async (req, res) => {
       .where("p.ParticipantEmail", userEmail)
       .orderBy("e.EventDateTimeStart", "asc");
 
-    // --------------------------------------------------------
-    // 3. Total Donations
-    // --------------------------------------------------------
     const donationData = await knex("donations as d")
       .join("participants as p", "p.ParticipantID", "d.ParticipantID")
       .where("p.ParticipantEmail", userEmail)
@@ -146,9 +169,6 @@ app.get("/userDashboard", async (req, res) => {
 
     const donationTotal = donationData?.total || 0;
 
-    // --------------------------------------------------------
-    // 4. Milestone Count
-    // --------------------------------------------------------
     const milestones = await knex("milestones as m")
       .join("participants as p", "p.ParticipantID", "m.ParticipantID")
       .where("p.ParticipantEmail", userEmail)
@@ -157,46 +177,41 @@ app.get("/userDashboard", async (req, res) => {
 
     const milestoneCount = milestones?.count || 0;
 
-    // --------------------------------------------------------
-    // 5. Get surveys for this participant (via registrations)
-    // --------------------------------------------------------
     const surveys = await knex("Surveys as s")
       .join("Registrations as r", "r.RegistrationID", "s.RegistrationID")
       .join("participants as p", "p.ParticipantID", "r.ParticipantID")
-      .leftJoin(
-        "EventOccurences as e",
-        "e.EventOccurrenceID",
-        "r.EventOccurrenceID",
-      )
+      .leftJoin("EventOccurences as e", "e.EventOccurrenceID", "r.EventOccurrenceID")
       .select(
         "s.SurveyID",
         "s.SurveyOverallScore",
         "s.SurveyComments",
         "s.SurveySubmissionDate",
         "e.EventName",
-        "r.RegistrationID",
+        "r.RegistrationID"
       )
       .where("p.ParticipantEmail", userEmail)
       .orderBy("s.SurveySubmissionDate", "desc");
 
-    // --------------------------------------------------------
-    // 6. Render dashboard
-    // --------------------------------------------------------
     res.render("userDashboard", {
       registeredEvents,
       donationTotal,
       milestoneCount,
+      surveys,
+      userLevel,
     });
-  } catch (err) {
+
+  } catch (err) { 
     console.error(err);
     res.render("userDashboard", {
       registeredEvents: [],
       donationTotal: 0,
       milestoneCount: 0,
-      userLevel, // even on error, pass the level
+      surveys: [],
+      userLevel,
     });
   }
 });
+
 
 // ==============================
 // DISPLAY FUTURE EVENTS
@@ -380,45 +395,6 @@ app.get("/logout", (req, res) => {
     if (err) console.log(err);
     res.redirect("/");
   });
-});
-
-// ==============================
-// HOME PAGE (Public Landing Page)
-// ==============================
-app.get("/", async (req, res) => {
-  try {
-    const today = new Date();
-
-    // Pull upcoming events for the homepage
-    const events = await knex("EventOccurences")
-      .select(
-        "EventOccurrenceID",
-        "EventName",
-        "EventDateTimeStart",
-        "EventDateTimeEnd",
-        "EventLocation"
-      )
-      .where("EventDateTimeStart", ">", today)
-      .orderBy("EventDateTimeStart", "asc")
-      .limit(6);
-
-    res.render("index", {
-      events,
-      isLoggedIn: req.session.isLoggedIn || false,
-      userEmail: req.session.email || null,
-      userLevel: req.session.userLevel || null
-    });
-
-  } catch (err) {
-    console.error("Error loading homepage:", err);
-
-    res.render("index", {
-      events: [],
-      isLoggedIn: req.session.isLoggedIn || false,
-      userEmail: req.session.email || null,
-      userLevel: req.session.userLevel || null
-    });
-  }
 });
 
 
