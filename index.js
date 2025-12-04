@@ -33,7 +33,7 @@ app.use(
 // global authentication middleware
 app.use((req, res, next) => {
   // Skip authentication for login routes
-  if (req.path === "/" || req.path === "/login" || req.path === "/logout") {
+  if (req.path === "/" || req.path === "/login" || req.path === "/logout" || req.path === "/displayEvents" || req.path === "/health") {
     return next();
   }
 
