@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard – Ella Rises</title>
+
+<!-- Bootstrap -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&display=swap" rel="stylesheet">
+
+<!-- Tableau Public JS API -->
+<script src="https://public.tableau.com/javascripts/api/tableau-2.min.js"></script>
+
+<style>
+  :root {
+    --cream: #f9f5ea;
+    --light-pink: #ffd8d1;
+    --pink: #f9afb1;
+    --sage: #9ab59d;
+    --gray: #3a3f3b;
+    --coral: #f4b092;
+    --rose: #ce325b;
+  }
+
+  body {
+    font-family: Arial, sans-serif;
+    background-color: var(--light-pink);
+    margin: 0;
+    padding: 0;
+    color: var(--gray);
+  }
+
+  /* NAVBAR */
+  .navbar-custom {
+    background-color: white;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  }
+
+  .navbar-brand {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.8rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--gray) !important;
+  }
+
+  .navbar-links a {
+    text-decoration: none;
+    margin: 0 15px;
+    color: var(--gray);
+    font-weight: 500;
+  }
+
+  .navbar-links a:hover,
+  .nav-right a:hover {
+    text-decoration: underline;
+  }
+
+  .nav-right a {
+    margin-left: 15px;
+    color: var(--gray);
+    text-decoration: none;
+    font-weight: 500;
+  }
+
+  /* PAGE WRAPPER */
+  .page-wrapper {
+    margin-top: 80px;
+    padding: 40px 20px;
+  }
+
+  .page-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 2.4rem;
+    color: var(--gray);
+    margin-bottom: 30px;
+    text-align: center;
+  }
+
+  /* DASHBOARD CONTAINER */
+  .dashboard-container {
+    background-color: white;
+    border-radius: 18px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    padding: 30px;
+    min-height: 600px;
+    position: relative;
+  }
+
+  #tableauViz {
+    width: 100%;
+    min-height: 700px;
+  }
+
+  .loading {
+    text-align: center;
+    padding: 60px 20px;
+    font-size: 16px;
+    color: var(--gray);
+  }
+
+  /* FOOTER */
+  .footer {
+    background-color: black;
+    color: white;
+    height: 100px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 0;
+  }
+
+  .footer-text {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.5rem;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .copyright {
+    text-align: center;
+    padding: 8px 0 20px;
+    font-size: 0.9rem;
+  }
+</style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Dashboard</h1>
+            <p>Interactive Tableau Dashboard</p>
+        </header>
+
+        <div class="dashboard-container">
+            <div id="loadingMessage" class="loading">
+                Loading dashboard...
+            </div>
+            <div id="tableauViz"></div>
+        </div>
+
+        <footer>
+            <p>&copy; 2025. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <script>
+        // ✔ Clean Tableau Public URL format
+        const tableauURL = "https://public.tableau.com/views/EllaRisesINTEX/EllaRisesDashboard?:showVizHome=no&:embed=true";
+
+        function initDashboard() {
+            const container = document.getElementById("tableauViz");
+            const options = {
+                hideTabs: true,
+                hideToolbar: true,
+                width: "100%",
+                height: "900px",
+                onFirstInteractive: () => {
+                    console.log("Dashboard loaded successfully");
+
+                    // Remove loading message
+                    const loader = document.getElementById("loadingMessage");
+                    if (loader) loader.style.display = "none";
+                }
+            };
+
+            try {
+                new tableau.Viz(container, tableauURL, options);
+            } catch (err) {
+                console.error("Tableau error:", err);
+                document.getElementById("loadingMessage").innerHTML =
+                    `<div style="background:#f8d7da; color:#721c24; padding:15px; border-radius:5px;">
+                        <strong>Error:</strong> Unable to load the dashboard. Check Tableau link.
+                    </div>`;
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", initDashboard);
+    </script>
+</body>
+</html>

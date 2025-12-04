@@ -180,6 +180,36 @@
     </div>
   </div>
 
+    <!-- SURVEYS -->
+    <div class="card card-custom mb-5 p-4">
+      <h3>Your Submitted Surveys</h3>
+
+      <% if (!surveys || surveys.length === 0) { %>
+        <p class="text-muted">You have not submitted any surveys yet.</p>
+      <% } else { %>
+        <table class="table table-striped table-hover mt-3">
+          <thead class="table-dark">
+            <tr>
+              <th>Event</th>
+              <th>Overall</th>
+              <th>Comments</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% surveys.forEach(s => { %>
+              <tr>
+                <td><%= s.EventName || 'N/A' %></td>
+                <td><%= s.SurveyOverallScore !== null ? s.SurveyOverallScore.toFixed(2) : '—' %></td>
+                <td><%= s.SurveyComments ? s.SurveyComments : '—' %></td>
+                <td><%= s.SurveySubmissionDate ? new Date(s.SurveySubmissionDate).toLocaleString() : '—' %></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      <% } %>
+    </div>
+
   <!-- FOOTER -->
   <div class="footer">
     <div class="footer-text">
