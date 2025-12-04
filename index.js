@@ -460,6 +460,10 @@ app.get("/logout", (req, res) => {
 });
 
 
+app.get("/teapot", (req, res) => {
+  res.status(418).render("teapot");
+});
+
 app.get("/health", (req, res) => {
   res.status(200).send("OK");
 });
