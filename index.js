@@ -349,10 +349,45 @@ app.get("/logout", (req, res) => {
   });
 });
 
-// public landing page
-app.get("/", (req, res) => {
-  res.render("index", { isLoggedIn: req.session.isLoggedIn || false });
+// ==============================
+// HOME PAGE (Public Landing Page)
+// ==============================
+app.get("/", async (req, res) => {
+  try {
+    const today = new Date();
+
+    // Pull upcoming events for the homepage
+    const events = await knex("EventOccurences")
+      .select(
+        "EventOccurrenceID",
+        "EventName",
+        "EventDateTimeStart",
+        "EventDateTimeEnd",
+        "EventLocation"
+      )
+      .where("EventDateTimeStart", ">", today)
+      .orderBy("EventDateTimeStart", "asc")
+      .limit(6);
+
+    res.render("index", {
+      events,
+      isLoggedIn: req.session.isLoggedIn || false,
+      userEmail: req.session.email || null,
+      userLevel: req.session.userLevel || null
+    });
+
+  } catch (err) {
+    console.error("Error loading homepage:", err);
+
+    res.render("index", {
+      events: [],
+      isLoggedIn: req.session.isLoggedIn || false,
+      userEmail: req.session.email || null,
+      userLevel: req.session.userLevel || null
+    });
+  }
 });
+
 
 app.get("/health", (req, res) => {
   res.status(200).send("OK");
