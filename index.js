@@ -7,6 +7,10 @@ const app = express();
 // import express-session to create a session variable
 const session = require("express-session");
 
+
+app.use(express.static('public'));
+
+
 // load environment variables from the .env file
 require("dotenv").config();
 
@@ -25,7 +29,7 @@ app.use(
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
-  })
+  }),
 );
 
 // global authentication middleware
@@ -69,8 +73,9 @@ app.post("/login", (req, res) => {
   }
 
   knex("public.users")
-    .select("id", "email", "password", "level")
-    .whereRaw("LOWER(email) = LOWER(?)", [sEmail])
+    .select("email", "password", "level")
+    .where("email", sEmail)
+    .andWhere("password", sPassword)
     .then((users) => {
       if (users.length > 0 && users[0].password === sPassword) {
         req.session.isLoggedIn = true;
@@ -96,10 +101,8 @@ app.post("/login", (req, res) => {
 app.get("/userDashboard", async (req, res) => {
   if (!req.session.isLoggedIn) return res.redirect("/login");
 
-  // TODO: Next step → Use the real participant table instead of the temp users table.
-  // For now we only know email from req.session.
-
   const userEmail = req.session.email;
+  const userLevel = req.session.userLevel; // <-- grab user level from session
 
   try {
     // --------------------------------------------------------
@@ -112,14 +115,18 @@ app.get("/userDashboard", async (req, res) => {
     // 2. Get registered events
     // --------------------------------------------------------
     const registeredEvents = await knex("registrations as r")
-      .join("EventOccurences as e", "e.EventOccurrenceID", "r.EventOccurrenceID")
+      .join(
+        "EventOccurences as e",
+        "e.EventOccurrenceID",
+        "r.EventOccurrenceID",
+      )
       .join("participants as p", "p.ParticipantID", "r.ParticipantID")
       .select(
         "e.EventName",
         "e.EventDateTimeStart",
         "e.EventLocation",
         "e.EventDescription",
-        "e.EventOccurrenceID"
+        "e.EventOccurrenceID",
       )
       .where("p.ParticipantEmail", userEmail)
       .orderBy("e.EventDateTimeStart", "asc");
@@ -133,7 +140,7 @@ app.get("/userDashboard", async (req, res) => {
       .sum({ total: "DonationAmount" })
       .first();
 
-    const totalDonations = donationData?.total || 0;
+    const donationTotal = donationData?.total || 0;
 
     // --------------------------------------------------------
     // 4. Milestone Count
@@ -169,19 +176,20 @@ app.get("/userDashboard", async (req, res) => {
     // --------------------------------------------------------
     res.render("userDashboard", {
       registeredEvents,
-      totalDonations,
+      donationTotal,
       milestoneCount,
-      surveys,
     });
   } catch (err) {
     console.error(err);
     res.render("userDashboard", {
       registeredEvents: [],
-      totalDonations: 0,
+      donationTotal: 0,
       milestoneCount: 0,
+      userLevel, // even on error, pass the level
     });
   }
 });
+
 
 // ==============================
 // DISPLAY FUTURE EVENTS
@@ -199,21 +207,19 @@ app.get("/displayEvents", async (req, res) => {
         "EventDateTimeStart",
         "EventDateTimeEnd",
         "EventLocation",
-        "EventCapacity"
+        "EventCapacity",
       )
       .where("EventDateTimeStart", ">", today)
       .orderBy("EventDateTimeStart", "asc");
 
     res.render("displayEvents", {
-      events: futureEvents, 
+      events: futureEvents,
     });
-
   } catch (err) {
     console.error("Error loading events:", err);
     res.render("displayEvents", { events: [] });
   }
 });
-
 
 // ==============================
 // MISC ROUTES
