@@ -1,6 +1,8 @@
 #!/bin/sh
 set -e
 
+apk add --no-cache postgresql-client
+
 # Setup .pgpass (REPLACE YOUR_PASSWORD)
 echo "*:54320:postgres:postgres:postgres" > ~/.pgpass
 chmod 600 ~/.pgpass
