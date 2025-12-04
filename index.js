@@ -87,10 +87,37 @@ app.post("/login", (req, res) => {
     });
 });
 
-// landing page route - check to make sure that the user is logged in first
+// userDashboard page route - check to make sure that the user is logged in first
 app.get("/userDashboard", (req, res) => {
   if (req.session.isLoggedIn) {
     res.render("userDashboard");
+  } else {
+    res.redirect("/login");
+  }
+});
+
+// displayEvents page route - check to make sure that the user is logged in first
+app.get("/displayEvents", (req, res) => {
+  if (req.session.isLoggedIn) {
+    res.render("displayEvents");
+  } else {
+    res.redirect("/login");
+  }
+});
+
+// displaySurveys page route - check to make sure that the user is logged in first
+app.get("/displaySurveys", (req, res) => {
+  if (req.session.isLoggedIn) {
+    res.render("displaySurveys");
+  } else {
+    res.redirect("/login");
+  }
+});
+
+// landing page route - check to make sure that the user is logged in first
+app.get("/displayUsers", (req, res) => {
+  if (req.session.isLoggedIn) {
+    res.render("displayUsers");
   } else {
     res.redirect("/login");
   }
@@ -113,6 +140,7 @@ app.get("/logout", (req, res) => {
     });
 });
 
+// external public landing page route - does not need login
 app.get("/", (req, res) => {
   res.render("index");
 });
