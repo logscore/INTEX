@@ -69,26 +69,23 @@
 
   /* PAGE WRAPPER */
   .page-wrapper {
-    margin-top: 80px;
+    margin-top: 120px;
     padding: 40px 20px;
   }
 
   .page-title {
     font-family: 'DM Serif Display', serif;
     font-size: 2.4rem;
-    color: var(--gray);
-    margin-bottom: 30px;
     text-align: center;
+    margin-bottom: 30px;
   }
 
-  /* DASHBOARD CONTAINER */
   .dashboard-container {
     background-color: white;
     border-radius: 18px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     padding: 30px;
     min-height: 600px;
-    position: relative;
   }
 
   #tableauViz {
@@ -127,59 +124,108 @@
     padding: 8px 0 20px;
     font-size: 0.9rem;
   }
+
+  .btn-white {
+    background: white;
+    border: 2px solid var(--gray);
+    color: var(--gray);
+    border-radius: 25px;
+    padding: 8px 20px;
+  }
+
+  .btn-white:hover {
+    background: var(--cream);
+  }
 </style>
 </head>
+
 <body>
-    <div class="container">
-        <header>
-            <h1>Dashboard</h1>
-            <p>Interactive Tableau Dashboard</p>
-        </header>
 
-        <div class="dashboard-container">
-            <div id="loadingMessage" class="loading">
-                Loading dashboard...
-            </div>
-            <div id="tableauViz"></div>
-        </div>
+<!-- NAVBAR (copied from index.ejs) -->
+<nav class="navbar navbar-expand-lg navbar-custom fixed-top">
+  <div class="container">
+    <span class="navbar-brand">
+      Ella Rises
+      <img src="/fulllogo.jpg" alt="Ella Rises Logo" style="width:35px; height:35px; object-fit: contain; vertical-align: text-bottom; margin-left: 8px;">
+    </span>
 
-        <footer>
-            <p>&copy; 2025. All rights reserved.</p>
-        </footer>
+    <div class="navbar-links mx-auto d-none d-lg-flex">
+      <a href="#about">About</a>
+      <a href="/displayEvents">Events</a>
+      <a href="https://givebutter.com/EllaRises">Donate</a>
     </div>
 
-    <script>
-        // ✔ Clean Tableau Public URL format
-        const tableauURL = "https://public.tableau.com/views/EllaRisesINTEX/EllaRisesDashboard?:showVizHome=no&:embed=true";
+    <div class="nav-right d-none d-lg-flex">
+      <% if (!isLoggedIn) { %>
+          <a href="/login">Login</a>
+      <% } else { %>
+          <a href="/logout">Logout</a>
+          <a href="/userDashboard">View Dashboard</a>
+      <% } %>
+    </div>
+  </div>
+</nav>
 
-        function initDashboard() {
-            const container = document.getElementById("tableauViz");
-            const options = {
-                hideTabs: true,
-                hideToolbar: true,
-                width: "100%",
-                height: "900px",
-                onFirstInteractive: () => {
-                    console.log("Dashboard loaded successfully");
+<!-- PAGE CONTENT -->
+<div class="page-wrapper container">
 
-                    // Remove loading message
-                    const loader = document.getElementById("loadingMessage");
-                    if (loader) loader.style.display = "none";
-                }
-            };
+    <h1 class="page-title">Interactive Dashboard</h1>
 
-            try {
-                new tableau.Viz(container, tableauURL, options);
-            } catch (err) {
-                console.error("Tableau error:", err);
-                document.getElementById("loadingMessage").innerHTML =
-                    `<div style="background:#f8d7da; color:#721c24; padding:15px; border-radius:5px;">
-                        <strong>Error:</strong> Unable to load the dashboard. Check Tableau link.
-                    </div>`;
+    <!-- Back Button -->
+    <div class="text-center mb-4">
+        <a href="/userDashboard" class="btn btn-white">← Back to Dashboard</a>
+    </div>
+
+    <div class="dashboard-container">
+        <div id="loadingMessage" class="loading">
+            Loading dashboard...
+        </div>
+        <div id="tableauViz"></div>
+    </div>
+
+</div>
+
+<!-- FOOTER (copied from index.ejs) -->
+<div class="footer">
+  <div class="footer-text">
+    Ella 
+    <img src="/EllaRises.jpg" alt="Logo" style="width:30px; height:auto; vertical-align: middle;">
+    Rises
+  </div>
+</div>
+
+<p class="copyright">© 2025 Ella Rises. All Rights Reserved.</p>
+
+<script>
+    const tableauURL = "https://public.tableau.com/views/EllaRisesINTEX/EllaRisesDashboard?:showVizHome=no&:embed=true";
+
+    function initDashboard() {
+        const container = document.getElementById("tableauViz");
+
+        const options = {
+            hideTabs: true,
+            hideToolbar: true,
+            width: "100%",
+            height: "900px",
+            onFirstInteractive: () => {
+                const loader = document.getElementById("loadingMessage");
+                if (loader) loader.style.display = "none";
             }
-        }
+        };
 
-        document.addEventListener("DOMContentLoaded", initDashboard);
-    </script>
+        try {
+            new tableau.Viz(container, tableauURL, options);
+        } catch (err) {
+            console.error("Tableau error:", err);
+            document.getElementById("loadingMessage").innerHTML =
+                `<div style="background:#f8d7da; color:#721c24; padding:15px; border-radius:5px;">
+                    <strong>Error:</strong> Unable to load the dashboard. Check Tableau link.
+                </div>`;
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", initDashboard);
+</script>
+
 </body>
 </html>
