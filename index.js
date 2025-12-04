@@ -33,7 +33,7 @@ app.use(
 // global authentication middleware
 app.use((req, res, next) => {
   // Skip authentication for login routes
-  if (req.path === "/" || req.path === "/login" || req.path === "/logout") {
+  if (req.path === "/" || req.path === "/login" || req.path === "/logout" || req.path === "/displayEvents" || req.path === "/health") {
     return next();
   }
 
@@ -56,8 +56,9 @@ const knex = require("knex")({
     password: process.env.POSTGRES_PASSWORD,
     database: process.env.POSTGRES_DATABASE,
     port: process.env.POSTGRES_PORT,
+    ssl: { rejectUnauthorized: false }
   },
-  wrapIdentifier: (value, origImpl) => origImpl(value.toLowerCase()),
+  wrapIdentifier: (value, origImpl) => origImpl(value.toLowerCase())
 });
 
 // Helper: normalize a participant DB row (which may have lowercase keys from PG)
@@ -258,8 +259,6 @@ app.get("/userDashboard", async (req, res) => {
 // DISPLAY FUTURE EVENTS
 // ==============================
 app.get("/displayEvents", async (req, res) => {
-  if (!req.session.isLoggedIn) return res.redirect("/login");
-
   try {
     const today = new Date();
 
@@ -568,15 +567,35 @@ app.get("/displayParticipants", async (req, res) => {
   }
 });
 
-app.get("/displayUsers", (req, res) => {
-  res.render("displayUsers");
+app.get("/displayUsers", async (req, res) => {
+  if (!req.session.isLoggedIn) return res.redirect("/login");
+  
+  try {
+    const users = await knex("Participant").select("*");
+    
+    res.render("displayUsers", {
+      userLevel: req.session.userLevel || null,
+      users: users || []
+    });
+  } catch (err) {
+    console.error("Error loading users:", err);
+    res.render("displayUsers", {
+      userLevel: req.session.userLevel || null,
+      users: []
+    });
+  }
 });
 
 app.get("/editUser", (req, res) => {
   res.render("editUser");
 });
 app.get("/tableauDashboard", (req, res) => {
-  res.render("tableauDashboard");
+  if (!req.session.isLoggedIn) return res.redirect("/login");
+  
+  res.render("tableauDashboard", {
+    isLoggedIn: req.session.isLoggedIn || false,
+    userLevel: req.session.userLevel || null
+  });
 });
 
 // Display milestones for current user
@@ -837,6 +856,10 @@ app.get("/viewMilestones", async (req, res) => {
     console.error("Error loading milestones for M-level:", err);
     res.render("viewMilestones", { milestoneGroups: {}, focusedMilestone: null, userLevel });
   }
+});
+
+app.get("/teapot", (req, res) => {
+  res.status(418).render("teapot");
 });
 
 app.get("/health", (req, res) => {

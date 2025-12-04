@@ -52,12 +52,14 @@
     }
 
     .btn-donate {
-      background: var(--donate);
-      color: white !important;
-      border: none;
+      background: white;
+      border: 2px solid var(--donate);
+      color: var(--donate) !important;
+      transition: 0.2s;
     }
     .btn-donate:hover {
-      opacity: 0.9;
+      background: var(--donate);
+      color: white !important;
     }
 
     /* CARDS */
@@ -99,6 +101,21 @@
       padding: 8px 0 20px;
       font-size: 0.9rem;
       color: black;
+    }
+
+    .teapot-button {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      font-size: 2.5rem;
+      text-decoration: none;
+      z-index: 100;
+      transition: 0.2s;
+      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+    }
+
+    .teapot-button:hover {
+      filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
     }
   </style>
 </head>
@@ -188,7 +205,7 @@
     </div>
 
     <!-- SURVEYS -->
-    <div class="card card-custom mb-5 p-4">
+    <div class="card card-custom mb-5 p-4 mt-5">
       <h3>Your Submitted Surveys</h3>
 
       <% if (!surveys || surveys.length === 0) { %>
@@ -230,6 +247,11 @@
   <p class="copyright">
     © 2025 Ella Rises. All Rights Reserved.
   </p>
+
+  <!-- Teapot Easter Egg Button (Managers Only) -->
+  <% if (userLevel === 'M') { %>
+    <a href="/teapot" class="teapot-button" title="🫖 Easter Egg">🫖</a>
+  <% } %>
 
 </body>
 </html>

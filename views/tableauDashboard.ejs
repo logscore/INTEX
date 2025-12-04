@@ -69,8 +69,8 @@
 
   /* PAGE WRAPPER */
   .page-wrapper {
-    margin-top: 120px;
     padding: 40px 20px;
+    flex: 1;
   }
 
   .page-title {
@@ -134,46 +134,46 @@
   }
 
   .btn-white:hover {
-    background: var(--cream);
+    background: var(--gray);
+    color: white;
+  }
+
+  .brand-box {
+    width: 30px;
+    height: 30px;
+    background: white;
+    border-radius: 6px;
+    display: inline-block;
   }
 </style>
 </head>
 
 <body>
 
-<!-- NAVBAR (copied from index.ejs) -->
-<nav class="navbar navbar-expand-lg navbar-custom fixed-top">
-  <div class="container">
-    <span class="navbar-brand">
-      Ella Rises
-      <img src="/fulllogo.jpg" alt="Ella Rises Logo" style="width:35px; height:35px; object-fit: contain; vertical-align: text-bottom; margin-left: 8px;">
-    </span>
+<!-- NAVBAR -->
+<nav class="navbar navbar-light bg-white shadow-sm px-4">
+  <a class="navbar-brand" href="/">
+    Ella
+    <img src="/fulllogo.jpg" alt="Ella Rises Logo" style="width:35px; height:35px; object-fit: contain; vertical-align: text-bottom; margin-left: 8px;">
+    Rises
+  </a>
 
-    <div class="navbar-links mx-auto d-none d-lg-flex">
-      <a href="#about">About</a>
-      <a href="/displayEvents">Events</a>
-      <a href="https://givebutter.com/EllaRises">Donate</a>
-    </div>
-
-    <div class="nav-right d-none d-lg-flex">
-      <% if (!isLoggedIn) { %>
-          <a href="/login">Login</a>
-      <% } else { %>
-          <a href="/logout">Logout</a>
-          <a href="/userDashboard">View Dashboard</a>
-      <% } %>
-    </div>
+  <div>
+    <% if (userLevel === 'M') { %>
+      <a href="/displayUsers" class="btn btn-white btn-sm me-2">Manage Users</a>
+    <% } %>
+    <a href="/userDashboard" class="btn btn-white btn-sm me-2">Back to Dashboard</a>
+    <a href="/logout" class="btn btn-white btn-sm">Logout</a>
   </div>
 </nav>
 
 <!-- PAGE CONTENT -->
 <div class="page-wrapper container">
-
     <h1 class="page-title">Interactive Dashboard</h1>
 
     <!-- Back Button -->
     <div class="text-center mb-4">
-        <a href="/userDashboard" class="btn btn-white">← Return to Dashboard</a>
+        <a href="/userDashboard" class="btn btn-white">← Back to Dashboard</a>
     </div>
 
     <div class="dashboard-container">
@@ -193,8 +193,6 @@
     Rises
   </div>
 </div>
-
-<p class="copyright">© 2025 Ella Rises. All Rights Reserved.</p>
 
 <script>
     const tableauURL = "https://public.tableau.com/views/EllaRisesINTEX/EllaRisesDashboard?:showVizHome=no&:embed=true";
@@ -226,6 +224,17 @@
 
     document.addEventListener("DOMContentLoaded", initDashboard);
 </script>
+
+<!-- FOOTER -->
+<div class="footer">
+  <div class="footer-text">
+    Ella 
+    <img src="/EllaRises.jpg" alt="Logo" style="width:30px; height:auto; vertical-align: middle;">
+    Rises
+  </div>
+</div>
+
+<p class="copyright">© 2025 Ella Rises. All Rights Reserved.</p>
 
 </body>
 </html>
