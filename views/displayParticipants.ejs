@@ -126,5 +126,43 @@
 <p class="copyright">© 2025 Ella Rises. All Rights Reserved.</p>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    function filterParticipants() {
+      const input = document.getElementById('searchInput');
+      const filter = input.value.toLowerCase();
+      const rows = document.getElementsByClassName('participant-row');
+      const cityGroups = document.getElementsByClassName('city-group');
+      
+      // Filter rows
+      for (let i = 0; i < rows.length; i++) {
+        const name = rows[i].getAttribute('data-name');
+        if (name.indexOf(filter) > -1) {
+          rows[i].style.display = '';
+        } else {
+          rows[i].style.display = 'none';
+        }
+      }
+      
+      // Show/hide city groups and auto-expand if searching
+      for (let i = 0; i < cityGroups.length; i++) {
+        const cityGroup = cityGroups[i];
+        const visibleRows = Array.from(cityGroup.querySelectorAll('.participant-row')).filter(row => row.style.display !== 'none');
+        
+        if (visibleRows.length > 0) {
+          cityGroup.style.display = '';
+          
+          // Auto-expand groups when searching
+          if (filter.length > 0) {
+            const collapseDiv = cityGroup.querySelector('.collapse');
+            if (collapseDiv && !collapseDiv.classList.contains('show')) {
+              const bsCollapse = new bootstrap.Collapse(collapseDiv, { toggle: true });
+            }
+          }
+        } else {
+          cityGroup.style.display = 'none';
+        }
+      }
+    }
+  </script>
 </body>
 </html>
