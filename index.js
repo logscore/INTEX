@@ -58,7 +58,7 @@ const knex = require("knex")({
     port: process.env.POSTGRES_PORT,
     ssl: { rejectUnauthorized: false }
   },
-  wrapIdentifier: (value, origImpl) => origImpl(value.toLowerCase()),
+  wrapIdentifier: (value, origImpl) => origImpl(value.toLowerCase())
 });
 
 // Helper: normalize a participant DB row (which may have lowercase keys from PG)
@@ -239,8 +239,6 @@ app.get("/userDashboard", async (req, res) => {
 // DISPLAY FUTURE EVENTS
 // ==============================
 app.get("/displayEvents", async (req, res) => {
-  if (!req.session.isLoggedIn) return res.redirect("/login");
-
   try {
     const today = new Date();
 
@@ -423,7 +421,12 @@ app.get("/editUser", (req, res) => {
   res.render("editUser");
 });
 app.get("/tableauDashboard", (req, res) => {
-  res.render("tableauDashboard");
+  if (!req.session.isLoggedIn) return res.redirect("/login");
+  
+  res.render("tableauDashboard", {
+    isLoggedIn: req.session.isLoggedIn || false,
+    userLevel: req.session.userLevel || null
+  });
 });
 
 app.get("/login", (req, res) => {
