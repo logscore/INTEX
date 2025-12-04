@@ -70,9 +70,11 @@
         color: white;
         height: 100px;
         display: flex;
+        flex-direction: column;
         justify-content: center;
         align-items: center;
         margin-top: 0;
+        padding-top: 10px;
     }
 
     .footer-text {
@@ -85,7 +87,7 @@
 
     .copyright {
       font-size: 0.9rem;
-      color: #555;
+      color: #ccc;
       margin-top: 4px;
     }
   </style>
@@ -99,8 +101,12 @@
       Ella <span class="brand-box"></span> Rises
     </a>
 
-    <div>
+    <!-- RIGHT SIDE BUTTONS -->
+    <div class="d-flex gap-2">
       <a href="/" class="btn btn-outline-secondary btn-sm">Home</a>
+
+      <!-- NEW LOGOUT BUTTON -->
+      <a href="/logout" class="btn btn-white btn-sm">Logout</a>
     </div>
   </nav>
 
@@ -126,10 +132,10 @@
           <tbody>
             <% registeredEvents.forEach(event => { %>
               <tr>
-                <td><%= public.event.eventName %></td>
-                <td><%= public.event.eventDate %></td>
-                <td><%= public.event.eventLocation %></td>
-                <td><%= public.event.eventDescription %></td>
+                <td><%= event.eventName %></td>
+                <td><%= event.eventDate %></td>
+                <td><%= event.eventLocation %></td>
+                <td><%= event.eventDescription %></td>
 
                 <td>
                   <a href="/displaySurveys?eventId=<%= event.eventId %>"

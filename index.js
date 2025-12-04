@@ -142,7 +142,9 @@ app.get("/logout", (req, res) => {
 
 // external public landing page route - does not need login
 app.get("/", (req, res) => {
-  res.render("index");
+  res.render("index", { 
+    isLoggedIn: req.session.isLoggedIn || false 
+  });
 });
 
 app.get("/health", (req, res) => {

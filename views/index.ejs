@@ -192,11 +192,19 @@
     <div class="navbar-links mx-auto d-none d-lg-flex">
       <a href="#about">About</a>
       <a href="/displayEvents">Events</a>
-      <a href="/displayDonations">Donate</a>
+      <a href="/https://givebutter.com/EllaRises">Donate</a>
     </div>
 
     <div class="nav-right d-none d-lg-flex">
-      <a href="/login">Login</a>
+
+      <% if (!isLoggedIn) { %>
+          <!-- SHOW WHEN LOGGED OUT -->
+          <a href="/login">Login</a>
+      <% } else { %>
+          <!-- SHOW WHEN LOGGED IN -->
+          <a href="/logout">Logout</a>
+      <% } %>
+
       <a href="#contact">Contact Us</a>
     </div>
   </div>
@@ -214,7 +222,7 @@
     <a href="/displayEvents" class="btn btn-white">View Events</a>
     <a href="/displaySurveys" class="btn btn-white">Take Survey</a>
     <a href="/displayMilestones" class="btn btn-white">Milestones</a>
-    <a href="/displayDonations" class="btn btn-donate">Donate</a>
+    <a href="https://givebutter.com/EllaRises" class="btn btn-donate">Donate</a>
   </div>
 </section>
 
@@ -281,7 +289,7 @@
   <div class="img-placeholder">DONATION IMAGE HERE</div>
 
   <div class="text-center mt-4">
-    <a href="/displayDonations" class="btn btn-donate">Donate Now</a>
+    <a href="/https://givebutter.com/EllaRises" class="btn btn-donate">Donate Now</a>
   </div>
 
   <!-- THANK YOU CONTENT MOVED HERE -->
