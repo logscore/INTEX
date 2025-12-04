@@ -180,13 +180,15 @@ app.get("/displayEvents", async (req, res) => {
       .orderBy("EventDateTimeStart", "asc");
 
     res.render("displayEvents", {
-      futureEvents, // send to EJS
+      events: futureEvents, 
     });
+
   } catch (err) {
     console.error("Error loading events:", err);
-    res.render("displayEvents", { futureEvents: [] });
+    res.render("displayEvents", { events: [] });
   }
 });
+
 
 // ==============================
 // MISC ROUTES
