@@ -57,9 +57,6 @@ const knex = require("knex")({
     database: process.env.POSTGRES_DATABASE,
     port: process.env.POSTGRES_PORT,
   },
-  ssl: {
-    rejectUnauthorized: process.env.NODE_ENV === "production" ? true : false,
-  },
 });
 
 // ==============================
