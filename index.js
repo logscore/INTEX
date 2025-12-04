@@ -13,6 +13,12 @@ require("dotenv").config();
 // set the port using the .env file
 const port = process.env.APP_PORT;
 
+// Import path module
+let path = require("path")
+
+// ADDING IMAGES
+app.use(express.static('public'));
+
 // use ejs for the webpages - refer to the views directory
 app.set("view engine", "ejs");
 
@@ -47,6 +53,8 @@ app.use((req, res, next) => {
     res.render("login", { error_message: "Please log in to access this page" });
   }
 });
+
+
 
 // set up connection to database
 const knex = require("knex")({
