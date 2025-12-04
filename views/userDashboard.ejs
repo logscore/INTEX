@@ -102,6 +102,21 @@
       font-size: 0.9rem;
       color: black;
     }
+
+    .teapot-button {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      font-size: 2.5rem;
+      text-decoration: none;
+      z-index: 100;
+      transition: 0.2s;
+      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+    }
+
+    .teapot-button:hover {
+      filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+    }
   </style>
 </head>
 
@@ -119,7 +134,6 @@
     <% if (userLevel === 'M') { %>
       <a href="/displayUsers" class="btn btn-white btn-sm me-2">Manage Users</a>
       <a href="/tableauDashboard" class="btn btn-white btn-sm me-2">Tableau Insights</a>
-      <a href="/teapot" class="btn btn-white btn-sm me-2" title="🫖 Easter Egg">☕</a>
     <% } %>
     <a href="/" class="btn btn-white btn-sm me-2">Home</a>
     <a href="/logout" class="btn btn-white btn-sm">Logout</a>
@@ -232,6 +246,11 @@
   <p class="copyright">
     © 2025 Ella Rises. All Rights Reserved.
   </p>
+
+  <!-- Teapot Easter Egg Button (Managers Only) -->
+  <% if (userLevel === 'M') { %>
+    <a href="/teapot" class="teapot-button" title="🫖 Easter Egg">🫖</a>
+  <% } %>
 
 </body>
 </html>
