@@ -129,8 +129,6 @@
     background: white;
     border: 2px solid var(--gray);
     color: var(--gray);
-    border-radius: 25px;
-    padding: 8px 20px;
   }
 
   .btn-white:hover {
@@ -159,9 +157,6 @@
   </a>
 
   <div>
-    <% if (userLevel === 'M') { %>
-      <a href="/displayUsers" class="btn btn-white btn-sm me-2">Manage Users</a>
-    <% } %>
     <a href="/userDashboard" class="btn btn-white btn-sm me-2">Back to Dashboard</a>
     <a href="/logout" class="btn btn-white btn-sm">Logout</a>
   </div>
