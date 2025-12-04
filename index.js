@@ -58,7 +58,7 @@ const knex = require("knex")({
     port: process.env.POSTGRES_PORT,
     ssl: { rejectUnauthorized: false },
   },
-  wrapIdentifier: (value, origImpl) => origImpl(value),
+  wrapIdentifier: (value, origImpl) => origImpl(value.toLowerCase()),
 });
 
 // ==============================
