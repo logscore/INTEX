@@ -116,6 +116,9 @@
   <div>
     <% if (userLevel === 'M') { %>
       <a href="/displayUsers" class="btn btn-white btn-sm me-2">Manage Users</a>
+      <a href="/displayParticipants" class="btn btn-white btn-sm me-2">Manage Participants</a>
+      <a href="/displaySurveys" class="btn btn-white btn-sm me-2">Manage Surveys</a>
+      <a href="/viewMilestones" class="btn btn-white btn-sm me-2">View Milestones</a>
       <a href="/tableauDashboard" class="btn btn-white btn-sm me-2">Tableau Insights</a>
     <% } %>
     <a href="/" class="btn btn-white btn-sm me-2">Home</a>
@@ -137,7 +140,6 @@
             <th>Event Name</th>
             <th>Date</th>
             <th>Location</th>
-            <th>Description</th>
             <th>Survey</th>
           </tr>
         </thead>
@@ -146,9 +148,8 @@
           <% registeredEvents.forEach(event => { %>
             <tr>
               <td><%= event.EventName %></td>
-              <td><%= event.EventDateTimeStart.toLocaleString() %></td>
+              <td><%= event.EventDateTimeStart ? new Date(event.EventDateTimeStart).toLocaleString() : '—' %></td>
               <td><%= event.EventLocation %></td>
-              <td><%= event.EventDescription %></td>
               <td>
                 <a href="/displaySurveys?eventId=<%= event.EventOccurrenceID %>"
                    class="btn btn-white btn-sm">
@@ -206,7 +207,7 @@
             <% surveys.forEach(s => { %>
               <tr>
                 <td><%= s.EventName || 'N/A' %></td>
-                <td><%= s.SurveyOverallScore !== null ? s.SurveyOverallScore.toFixed(2) : '—' %></td>
+                <td><%= (s.SurveyOverallScore !== null && s.SurveyOverallScore !== undefined && !isNaN(parseFloat(s.SurveyOverallScore))) ? parseFloat(s.SurveyOverallScore).toFixed(2) : '—' %></td>
                 <td><%= s.SurveyComments ? s.SurveyComments : '—' %></td>
                 <td><%= s.SurveySubmissionDate ? new Date(s.SurveySubmissionDate).toLocaleString() : '—' %></td>
               </tr>

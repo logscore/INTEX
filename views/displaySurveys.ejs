@@ -10,6 +10,10 @@
 		.card { border-radius: 12px; }
 		.survey-header { font-family: 'DM Serif Display', serif; font-size: 1.6rem; }
 		.survey-form { margin-top: 12px; }
+		.event-group { margin-bottom: 20px; }
+		.event-header { cursor: pointer; padding: 12px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #e45858; }
+		.event-header:hover { background: #e9ecef; }
+		.event-content { padding: 12px; background: #ffffff; border: 1px solid #dee2e6; border-top: none; border-radius: 0 0 8px 8px; }
 	</style>
 </head>
 <body>
@@ -18,17 +22,118 @@
 			<div class="col-md-10">
 				<div class="card p-4">
 					<div class="d-flex justify-content-between align-items-center">
-						<div>
-							<h2 class="survey-header">Event Surveys</h2>
-							<p class="text-muted">Submit feedback for events you attended.</p>
-						</div>
+					<div>
+						<h2 class="survey-header">Event Surveys</h2>
+						<p class="text-muted">Submit feedback for events you attended.</p>
+					</div>
+					<% if (typeof survey === 'undefined' || !survey || !survey.SurveyID) { %>
+						<a href="/userDashboard" class="btn btn-white btn-sm">Return to Dashboard</a>
+					<% } %>
 					</div>
 
-					<% if (!registrations || registrations.length === 0) { %>
+					<% if (typeof survey !== 'undefined' && survey && survey.SurveyID) { %>
+						<hr />
+						<div class="d-flex justify-content-between align-items-center mb-4">
+							<h3>Survey Detail</h3>
+							<a href="/displaySurveys" class="btn btn-white btn-sm">Return to Dashboard</a>
+						</div>
+						<div class="card p-4 mb-4">
+							<h5>Survey ID: <%= survey.SurveyID %></h5>
+							<div class="row mt-4">
+								<div class="col-md-6">
+									<p><span class="label">Event:</span> <%= survey.EventName || '—' %></p>
+									<p><span class="label">Event Date:</span> <%= survey.EventDateTimeStart ? new Date(survey.EventDateTimeStart).toLocaleString() : '—' %></p>
+									<p><span class="label">Participant Name:</span> <%= (survey.ParticipantFirstName || '') + ' ' + (survey.ParticipantLastName || '') %></p>
+									<p><span class="label">Email:</span> <%= survey.ParticipantEmail || '—' %></p>
+									<p><span class="label">Phone:</span> <%= survey.ParticipantPhone || '—' %></p>
+								</div>
+								<div class="col-md-6">
+									<p><span class="label">Submitted:</span> <%= survey.SurveySubmissionDate ? new Date(survey.SurveySubmissionDate).toLocaleString() : '—' %></p>
+									<p><span class="label">Overall Score:</span> <%= (survey.SurveyOverallScore !== null && !isNaN(parseFloat(survey.SurveyOverallScore))) ? parseFloat(survey.SurveyOverallScore).toFixed(2) : '—' %></p>
+									<p><span class="label">NPS Bucket:</span> <%= survey.SurveyNPSBucket || '—' %></p>
+								</div>
+							</div>
+							<hr />
+							<h5>Scores</h5>
+							<div class="row mt-3">
+								<div class="col-md-3">
+									<p><span class="label">Satisfaction:</span> <%= survey.SurveySatisfactionScore !== null ? survey.SurveySatisfactionScore : '—' %></p>
+								</div>
+								<div class="col-md-3">
+									<p><span class="label">Usefulness:</span> <%= survey.SurveyUsefulnessScore !== null ? survey.SurveyUsefulnessScore : '—' %></p>
+								</div>
+								<div class="col-md-3">
+									<p><span class="label">Instructor:</span> <%= survey.SurveyInstructorScore !== null ? survey.SurveyInstructorScore : '—' %></p>
+								</div>
+								<div class="col-md-3">
+									<p><span class="label">Recommend:</span> <%= survey.SurveyRecommendationScore !== null ? survey.SurveyRecommendationScore : '—' %></p>
+								</div>
+							</div>
+							<hr />
+							<h5>Comments</h5>
+							<p><%= survey.SurveyComments || '<em class="text-muted">No comments provided.</em>' %></p>
+							<hr />
+							<% if (typeof userLevel !== 'undefined' && userLevel === 'M') { %>
+								<form method="POST" action="/deleteSurvey" onsubmit="return confirm('Delete this survey?');">
+									<input type="hidden" name="surveyId" value="<%= survey.SurveyID %>" />
+									<button type="submit" class="btn btn-danger">Delete Survey</button>
+								</form>
+							<% } %>
+						</div>
+					<% } else if (typeof groupedSurveys !== 'undefined' && groupedSurveys && Object.keys(groupedSurveys).length > 0) { %>
+						<hr />
+						<h4>All Survey Submissions by Event</h4>
+						<% Object.entries(groupedSurveys).forEach(function([eventName, surveysForEvent]) { %>
+							<% if (surveysForEvent.length > 0) { %>
+								<div class="event-group">
+									<div class="event-header" data-bs-toggle="collapse" data-bs-target="#event-<%= eventName.replace(/\s+/g, '-').toLowerCase() %>" aria-expanded="false">
+										<strong><%= eventName %></strong>
+										<span class="float-end badge bg-secondary"><%= surveysForEvent.length %> surveys</span>
+									</div>
+									<div class="collapse" id="event-<%= eventName.replace(/\s+/g, '-').toLowerCase() %>">
+										<div class="event-content">
+											<div class="table-responsive">
+												<table class="table table-sm table-striped mb-0">
+													<thead class="table-dark">
+														<tr>
+															<th>Participant</th>
+															<th>Satisfaction</th>
+															<th>Usefulness</th>
+															<th>Instructor</th>
+															<th>Recommend</th>
+															<th>Overall</th>
+															<th>NPS</th>
+															<th>Submitted</th>
+														</tr>
+													</thead>
+													<tbody>
+														<% surveysForEvent.forEach(function(s) { %>
+															<tr onclick="window.location.href='/displaySurveys?id=<%= s.SurveyID %>';" style="cursor: pointer;">
+																<td><%= (s.ParticipantFirstName || '') + ' ' + (s.ParticipantLastName || '') %><br/><small class="text-muted"><%= s.ParticipantEmail || '—' %></small></td>
+																<td><%= s.SurveySatisfactionScore !== null ? s.SurveySatisfactionScore : '—' %></td>
+																<td><%= s.SurveyUsefulnessScore !== null ? s.SurveyUsefulnessScore : '—' %></td>
+																<td><%= s.SurveyInstructorScore !== null ? s.SurveyInstructorScore : '—' %></td>
+																<td><%= s.SurveyRecommendationScore !== null ? s.SurveyRecommendationScore : '—' %></td>
+																<td><%= (s.SurveyOverallScore !== null && s.SurveyOverallScore !== undefined && !isNaN(parseFloat(s.SurveyOverallScore))) ? parseFloat(s.SurveyOverallScore).toFixed(2) : '—' %></td>
+																<td><%= s.SurveyNPSBucket || '—' %></td>
+																<td><%= s.SurveySubmissionDate ? new Date(s.SurveySubmissionDate).toLocaleDateString() : '—' %></td>
+															</tr>
+														<% }) %>
+													</tbody>
+												</table>
+											</div>
+										</div>
+									</div>
+								</div>
+							<% } %>
+						<% }) %>
+					<% } %>
+
+					<% if (typeof registrations === 'undefined' || !registrations || registrations.length === 0) { %>
 						<div class="alert alert-info mt-3">No registered events found. Register for an event to submit a survey.</div>
 					<% } %>
 
-					<% if (registrations && registrations.length > 0) { %>
+					<% if (typeof registrations !== 'undefined' && registrations && registrations.length > 0) { %>
 						<% registrations.forEach(function(reg) { %>
 							<div class="border rounded p-3 mb-3">
 								<h5><%= reg.EventName %></h5>

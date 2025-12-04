@@ -82,6 +82,27 @@ function normalizeParticipantRow(row) {
   };
 }
 
+// Helper: normalize a survey DB row (which has lowercase keys from PG)
+function normalizeSurveyRow(row) {
+  if (!row) return null;
+  return {
+    SurveyID: row.surveyid || row.SurveyID || null,
+    RegistrationID: row.registrationid || row.RegistrationID || null,
+    SurveySatisfactionScore: row.surveysatisfactionscore || row.SurveySatisfactionScore || null,
+    SurveyUsefulnessScore: row.surveyusefulnessscore || row.SurveyUsefulnessScore || null,
+    SurveyInstructorScore: row.surveyinstructorscore || row.SurveyInstructorScore || null,
+    SurveyRecommendationScore: row.surveyrecommendationscore || row.SurveyRecommendationScore || null,
+    SurveyOverallScore: row.surveyoverallscore || row.SurveyOverallScore || null,
+    SurveyNPSBucket: row.surveynpsbucket || row.SurveyNPSBucket || null,
+    SurveyComments: row.surveycomments || row.SurveyComments || null,
+    SurveySubmissionDate: row.surveysubmissiondate || row.SurveySubmissionDate || null,
+    ParticipantEmail: row.participantemail || row.ParticipantEmail || null,
+    ParticipantFirstName: row.participantfirstname || row.ParticipantFirstName || null,
+    ParticipantLastName: row.participantlastname || row.ParticipantLastName || null,
+    EventName: row.eventname || row.EventName || null,
+  };
+}
+
 // ==============================
 // HOME PAGE (Public Landing Page)
 // ==============================
@@ -176,7 +197,6 @@ app.get("/userDashboard", async (req, res) => {
         "e.EventName",
         "e.EventDateTimeStart",
         "e.EventLocation",
-        "e.EventDescription",
         "e.EventOccurrenceID",
       )
       .where("p.ParticipantEmail", userEmail)
@@ -272,7 +292,103 @@ app.get("/displaySurveys", async (req, res) => {
 
   try {
     const userEmail = req.session.email;
+    const surveyId = req.query.id;
 
+    // Normalize session level for comparison
+    const userLevel = (req.session.userLevel || "").toString().toUpperCase();
+
+    // If viewing a single survey detail (admin only)
+    if (surveyId && userLevel === "M") {
+      try {
+        const survey = await knex("Surveys as s")
+          .join("Registrations as r", "r.RegistrationID", "s.RegistrationID")
+          .join("Participants as p", "p.ParticipantID", "r.ParticipantID")
+          .leftJoin("EventOccurences as e", "e.EventOccurrenceID", "r.EventOccurrenceID")
+          .select(
+            "s.SurveyID",
+            "s.RegistrationID",
+            "s.SurveySatisfactionScore",
+            "s.SurveyUsefulnessScore",
+            "s.SurveyInstructorScore",
+            "s.SurveyRecommendationScore",
+            "s.SurveyOverallScore",
+            "s.SurveyNPSBucket",
+            "s.SurveyComments",
+            "s.SurveySubmissionDate",
+            "p.ParticipantID",
+            "p.ParticipantEmail",
+            "p.ParticipantFirstName",
+            "p.ParticipantLastName",
+            "p.ParticipantPhone",
+            "e.EventName",
+            "e.EventDateTimeStart"
+          )
+          .where("s.SurveyID", parseInt(surveyId, 10))
+          .first();
+
+        if (!survey) {
+          return res.status(404).send("Survey not found");
+        }
+
+        const normalizedSurvey = normalizeSurveyRow(survey);
+        return res.render("displaySurveys", { survey: normalizedSurvey, userLevel });
+      } catch (err) {
+        console.error("Error loading survey detail:", err);
+        return res.status(500).send("Error loading survey");
+      }
+    }
+
+    // If manager/admin, show all survey submissions with full details
+    if (userLevel === "M") {
+      const surveys = await knex("Surveys as s")
+        .join("Registrations as r", "r.RegistrationID", "s.RegistrationID")
+        .join("Participants as p", "p.ParticipantID", "r.ParticipantID")
+        .leftJoin("EventOccurences as e", "e.EventOccurrenceID", "r.EventOccurrenceID")
+        .select(
+          "s.SurveyID",
+          "s.RegistrationID",
+          "s.SurveySatisfactionScore",
+          "s.SurveyUsefulnessScore",
+          "s.SurveyInstructorScore",
+          "s.SurveyRecommendationScore",
+          "s.SurveyOverallScore",
+          "s.SurveyNPSBucket",
+          "s.SurveyComments",
+          "s.SurveySubmissionDate",
+          "p.ParticipantEmail",
+          "p.ParticipantFirstName",
+          "p.ParticipantLastName",
+          "e.EventName"
+        )
+        .orderBy("s.SurveySubmissionDate", "desc");
+
+      // Normalize all survey rows to CamelCase for template consistency
+      const normalizedSurveys = surveys.map(normalizeSurveyRow);
+
+      // Group surveys by event and filter out ones with null scores
+      const groupedByEvent = {};
+      normalizedSurveys.forEach((survey) => {
+        const eventName = survey.EventName || "Unknown Event";
+        if (!groupedByEvent[eventName]) {
+          groupedByEvent[eventName] = [];
+        }
+
+        // Only include surveys where all score fields are non-null
+        const hasAllScores =
+          survey.SurveySatisfactionScore !== null &&
+          survey.SurveyUsefulnessScore !== null &&
+          survey.SurveyInstructorScore !== null &&
+          survey.SurveyRecommendationScore !== null;
+
+        if (hasAllScores) {
+          groupedByEvent[eventName].push(survey);
+        }
+      });
+
+      return res.render("displaySurveys", { groupedSurveys: groupedByEvent, userLevel });
+    }
+
+    // Regular users: show their registrations so they can submit surveys
     const registrations = await knex("registrations as r")
       .join("participants as p", "p.ParticipantID", "r.ParticipantID")
       .join(
@@ -290,6 +406,7 @@ app.get("/displaySurveys", async (req, res) => {
     res.render("displaySurveys", { registrations: [] });
   }
 });
+
 
 // Accept survey submissions
 app.post("/submitSurvey", async (req, res) => {
@@ -349,6 +466,32 @@ app.post("/submitSurvey", async (req, res) => {
   }
 });
 
+// Delete a survey (admin only)
+app.post("/deleteSurvey", async (req, res) => {
+  if (!req.session.isLoggedIn) return res.redirect("/login");
+
+  const userLevel = (req.session.userLevel || "").toString().toUpperCase();
+  if (userLevel !== "M") return res.status(403).send("Forbidden");
+
+  try {
+    const { surveyId } = req.body;
+
+    if (!surveyId) {
+      return res.redirect("/displaySurveys");
+    }
+
+    // Delete the survey
+    await knex("Surveys")
+      .where("SurveyID", parseInt(surveyId, 10))
+      .del();
+
+    res.redirect("/displaySurveys");
+  } catch (err) {
+    console.error("Error deleting survey:", err);
+    res.redirect("/displaySurveys");
+  }
+});
+
 // Display participants: if admin and ?all=true show all, otherwise show current user's participant record
 app.get("/displayParticipants", async (req, res) => {
   if (!req.session.isLoggedIn) return res.redirect("/login");
@@ -397,7 +540,18 @@ app.get("/displayParticipants", async (req, res) => {
         .orderBy("ParticipantLastName", "asc");
 
       const normalized = participants.map(normalizeParticipantRow);
-      return res.render("displayParticipants", { participants: normalized, userLevel });
+      
+      // Group participants by city
+      const groupedByCity = {};
+      normalized.forEach((p) => {
+        const city = p.ParticipantCity || "Unknown City";
+        if (!groupedByCity[city]) {
+          groupedByCity[city] = [];
+        }
+        groupedByCity[city].push(p);
+      });
+      
+      return res.render("displayParticipants", { groupedParticipants: groupedByCity, userLevel });
     }
 
     // Regular users: fetch their participant record by email
@@ -425,6 +579,125 @@ app.get("/tableauDashboard", (req, res) => {
   res.render("tableauDashboard");
 });
 
+// Display milestones for current user
+app.get("/displayMilestones", async (req, res) => {
+  if (!req.session.isLoggedIn) return res.redirect("/login");
+
+  try {
+    const userEmail = req.session.email;
+
+    // Fetch participant by email
+    const participant = await knex("Participants")
+      .where("ParticipantEmail", userEmail)
+      .first();
+
+    if (!participant) {
+      return res.render("displayMilestones", { milestones: [], participantName: "Unknown" });
+    }
+
+    const participantId = participant.participantid || participant.ParticipantID;
+
+    // Fetch milestones for this participant
+    const milestones = await knex("Milestones")
+      .where("ParticipantID", participantId)
+      .orderBy("MilestoneDate", "desc");
+
+    // Normalize milestone keys (lowercase from DB)
+    const normalizedMilestones = milestones.map((m) => ({
+      MilestoneID: m.milestoneid || m.MilestoneID || null,
+      ParticipantID: m.participantid || m.ParticipantID || null,
+      MilestoneTitle: m.milestonetitle || m.MilestoneTitle || null,
+      MilestoneDate: m.milestonedate || m.MilestoneDate || null,
+    }));
+
+    const participantName = participant.participantfirstname || participant.ParticipantFirstName
+      ? `${participant.participantfirstname || participant.ParticipantFirstName} ${participant.participantlastname || participant.ParticipantLastName}`
+      : "Your";
+
+    res.render("displayMilestones", { milestones: normalizedMilestones, participantName, participantId });
+  } catch (err) {
+    console.error("Error loading milestones:", err);
+    res.render("displayMilestones", { milestones: [], participantName: "Unknown" });
+  }
+});
+
+// Add a new milestone (self-reported)
+app.post("/addMilestone", async (req, res) => {
+  if (!req.session.isLoggedIn) return res.redirect("/login");
+
+  try {
+    const userEmail = req.session.email;
+    const { milestoneTitle, milestoneDate } = req.body;
+
+    console.log("DEBUG: Adding milestone - Email:", userEmail, "Title:", milestoneTitle, "Date:", milestoneDate);
+
+    // Validate input
+    if (!milestoneTitle || !milestoneDate) {
+      console.log("DEBUG: Missing title or date");
+      return res.redirect("/displayMilestones");
+    }
+
+    // Fetch participant by email
+    const participant = await knex("Participants")
+      .where("ParticipantEmail", userEmail)
+      .first();
+
+    console.log("DEBUG: Participant found:", participant ? "Yes" : "No");
+
+    if (!participant) {
+      return res.redirect("/displayMilestones");
+    }
+
+    const participantId = participant.participantid || participant.ParticipantID;
+    console.log("DEBUG: Participant ID:", participantId);
+
+    // Get next MilestoneID - find the actual maximum
+    const maxMilestone = await knex("Milestones").max("MilestoneID").first();
+    const currentMax = Object.values(maxMilestone)[0] || 0;
+    const nextId = currentMax + 1;
+
+    console.log("DEBUG: Max milestone result:", maxMilestone, "Current max:", currentMax, "Next ID:", nextId);
+
+    // Insert new milestone
+    const insertResult = await knex("Milestones").insert({
+      MilestoneID: nextId,
+      ParticipantID: participantId,
+      MilestoneTitle: milestoneTitle.trim(),
+      MilestoneDate: milestoneDate,
+    });
+
+    console.log("DEBUG: Insert result:", insertResult);
+
+    res.redirect("/displayMilestones");
+  } catch (err) {
+    console.error("Error adding milestone:", err);
+    res.redirect("/displayMilestones");
+  }
+});
+
+// Delete a milestone
+app.post("/deleteMilestone", async (req, res) => {
+  if (!req.session.isLoggedIn) return res.redirect("/login");
+
+  try {
+    const { milestoneId } = req.body;
+
+    if (!milestoneId) {
+      return res.redirect("/displayMilestones");
+    }
+
+    // Delete the milestone
+    await knex("Milestones")
+      .where("MilestoneID", parseInt(milestoneId, 10))
+      .del();
+
+    res.redirect("/displayMilestones");
+  } catch (err) {
+    console.error("Error deleting milestone:", err);
+    res.redirect("/displayMilestones");
+  }
+});
+
 app.get("/login", (req, res) => {
   if (req.session.isLoggedIn) {
     res.redirect("userDashboard");
@@ -440,6 +713,131 @@ app.get("/logout", (req, res) => {
   });
 });
 
+// Delete participant (admin only)
+app.post('/deleteParticipant', async (req, res) => {
+  if (!req.session.isLoggedIn) return res.redirect('/login');
+
+  const userLevel = (req.session.userLevel || '').toString().toUpperCase();
+  if (userLevel !== 'M') return res.status(403).send('Forbidden');
+
+  const id = parseInt(req.body.participantId || req.body.id, 10);
+  if (isNaN(id)) return res.redirect('/displayParticipants');
+
+  // require explicit confirmation flag from the POST form
+  const confirmed = req.body.confirm === 'on' || req.body.confirm === 'yes' || req.body.confirm === 'true';
+  if (!confirmed) {
+    // redirect to confirmation page if not confirmed
+    return res.redirect(`/confirmDeleteParticipant?participantId=${id}`);
+  }
+
+  try {
+    await knex.transaction(async (trx) => {
+      // delete surveys linked to registrations for this participant
+      const regs = await trx('Registrations').where('ParticipantID', id).select('RegistrationID');
+      const regIds = regs.map(r => r.RegistrationID || r.registrationid).filter(Boolean);
+      if (regIds.length) {
+        await trx('Surveys').whereIn('RegistrationID', regIds).del();
+      }
+
+      // delete registrations
+      await trx('Registrations').where('ParticipantID', id).del();
+
+      // delete donations and milestones
+      await trx('Donations').where('ParticipantID', id).del();
+      await trx('Milestones').where('ParticipantID', id).del();
+
+      // finally delete participant
+      await trx('Participants').where('ParticipantID', id).del();
+    });
+
+    return res.redirect('/displayParticipants');
+  } catch (err) {
+    console.error('Error deleting participant:', err);
+    return res.redirect('/displayParticipants');
+  }
+});
+
+// Confirmation page for deletion
+app.get('/confirmDeleteParticipant', async (req, res) => {
+  if (!req.session.isLoggedIn) return res.redirect('/login');
+
+  const userLevel = (req.session.userLevel || '').toString().toUpperCase();
+  if (userLevel !== 'M') return res.status(403).send('Forbidden');
+
+  const id = parseInt(req.query.participantId || req.query.id, 10);
+  if (isNaN(id)) return res.redirect('/displayParticipants');
+
+  try {
+    let participant = await knex('Participants').where('ParticipantID', id).first();
+    participant = normalizeParticipantRow(participant);
+    if (!participant) return res.redirect('/displayParticipants');
+
+    res.render('confirmDeleteParticipant', { participant, userLevel });
+  } catch (err) {
+    console.error('Error loading confirm delete page:', err);
+    res.redirect('/displayParticipants');
+  }
+});
+
+// View milestones (M-level users, grouped by title)
+app.get("/viewMilestones", async (req, res) => {
+  if (!req.session.isLoggedIn) return res.redirect("/login");
+  const userLevel = (req.session.userLevel || "").toString().toUpperCase();
+  if (userLevel !== "M") return res.status(403).send("Forbidden");
+
+  try {
+    const titleQuery = req.query.title;
+    // Fetch all milestones with participant info
+    const milestones = await knex("Milestones as m")
+      .join("Participants as p", "p.ParticipantID", "m.ParticipantID")
+      .select(
+        "m.MilestoneID",
+        "m.MilestoneTitle",
+        "m.MilestoneDate",
+        "p.ParticipantID",
+        "p.ParticipantFirstName",
+        "p.ParticipantLastName",
+        "p.ParticipantEmail"
+      )
+      .orderBy("m.MilestoneDate", "desc");
+
+    // Normalize and group by title
+    const grouped = {};
+    milestones.forEach((m) => {
+      const title = m.milestonetitle || m.MilestoneTitle || "Untitled";
+      const participantName = (m.participantfirstname || m.ParticipantFirstName || "") + " " + (m.participantlastname || m.ParticipantLastName || "");
+      const item = {
+        MilestoneID: m.milestoneid || m.MilestoneID,
+        MilestoneTitle: title,
+        MilestoneDate: m.milestonedate || m.MilestoneDate,
+        ParticipantID: m.participantid || m.ParticipantID,
+        ParticipantName: participantName.trim(),
+        ParticipantEmail: m.participantemail || m.ParticipantEmail,
+      };
+      if (!grouped[title]) grouped[title] = [];
+      grouped[title].push(item);
+    });
+
+    // Focused view if title is selected
+    if (titleQuery && grouped[titleQuery]) {
+      return res.render("viewMilestones", {
+        focusedMilestone: { title: titleQuery, items: grouped[titleQuery] },
+        milestoneGroups: null,
+        userLevel,
+      });
+    }
+
+    // Otherwise show grouped list
+    return res.render("viewMilestones", {
+      milestoneGroups: grouped,
+      focusedMilestone: null,
+      userLevel,
+    });
+  } catch (err) {
+    console.error("Error loading milestones for M-level:", err);
+    res.render("viewMilestones", { milestoneGroups: {}, focusedMilestone: null, userLevel });
+  }
+});
 
 app.get("/health", (req, res) => {
   res.status(200).send("OK");
