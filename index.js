@@ -20,6 +20,7 @@ app.set("view engine", "ejs");
 
 // tells express how to read form data in the body of a request
 app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 
 // set the session variable
 app.use(
@@ -32,8 +33,8 @@ app.use(
 
 // global authentication middleware
 app.use((req, res, next) => {
-  // Skip authentication for login routes
-  if (req.path === "/" || req.path === "/login" || req.path === "/logout" || req.path === "/displayEvents" || req.path === "/health") {
+  // Skip authentication for login routes and public donation routes
+  if (req.path === "/" || req.path === "/login" || req.path === "/logout" || req.path === "/displayEvents" || req.path === "/health" || req.path === "/donate" || req.path === "/submitDonation" || req.path === "/registerParticipant" || req.path === "/submitParticipantRegistration" || req.path === "/completeDonation") {
     return next();
   }
 
@@ -273,26 +274,237 @@ app.get("/userDashboard", async (req, res) => {
 // ==============================
 app.get("/displayEvents", async (req, res) => {
   try {
-    const today = new Date();
+    const userLevel = req.session.userLevel || null;
 
-    const futureEvents = await knex("EventOccurences")
+    // Fetch all events with event template info
+    const events = await knex("EventOccurences as eo")
+      .join("EventTemplates as et", "eo.EventTemplateID", "et.EventTemplateID")
       .select(
-        "EventOccurrenceID",
-        "EventName",
-        "EventDateTimeStart",
-        "EventDateTimeEnd",
-        "EventLocation",
-        "EventCapacity",
+        "eo.EventOccurrenceID",
+        "eo.EventName",
+        "eo.EventDateTimeStart",
+        "eo.EventDateTimeEnd",
+        "eo.EventLocation",
+        "eo.EventCapacity",
+        "eo.EventRegistrationDeadline",
+        "et.EventType",
+        "et.EventDescription"
       )
-      .where("EventDateTimeStart", ">", today)
-      .orderBy("EventDateTimeStart", "asc");
+      .orderBy("eo.EventDateTimeStart", "asc");
+
+    // Normalize the rows (handle lowercase column names from knex)
+    const normalizedEvents = events.map(e => ({
+      EventOccurrenceID: e.eventoccurrenceid || e.EventOccurrenceID,
+      EventName: e.eventname || e.EventName,
+      EventDateTimeStart: e.eventdatetimestart || e.EventDateTimeStart,
+      EventDateTimeEnd: e.eventdatetimeend || e.EventDateTimeEnd,
+      EventLocation: e.eventlocation || e.EventLocation,
+      EventCapacity: e.eventcapacity || e.EventCapacity,
+      EventRegistrationDeadline: e.eventregistrationdeadline || e.EventRegistrationDeadline,
+      EventType: e.eventtype || e.EventType,
+      EventDescription: e.eventdescription || e.EventDescription
+    }));
+
+    // Group events by EventType
+    const groupedEvents = {};
+    normalizedEvents.forEach(event => {
+      const eventType = event.EventType || "Other";
+      if (!groupedEvents[eventType]) {
+        groupedEvents[eventType] = [];
+      }
+      groupedEvents[eventType].push(event);
+    });
 
     res.render("displayEvents", {
-      events: futureEvents,
+      groupedEvents: groupedEvents,
+      userLevel: userLevel
     });
   } catch (err) {
     console.error("Error loading events:", err);
-    res.render("displayEvents", { events: [] });
+    res.render("displayEvents", {
+      groupedEvents: {},
+      userLevel: req.session.userLevel || null
+    });
+  }
+});
+
+// Add new event form
+app.get("/addEvent", async (req, res) => {
+  if (!req.session.isLoggedIn) return res.redirect("/login");
+  
+  try {
+    // Fetch all event templates for dropdown
+    const eventTemplates = await knex("EventTemplates").select("*");
+    
+    // Get unique event types to avoid duplicates in dropdown
+    const uniqueTypes = [];
+    const seenTypes = new Set();
+    
+    eventTemplates.forEach(template => {
+      const eventType = template.eventtype || template.EventType;
+      if (eventType && !seenTypes.has(eventType)) {
+        seenTypes.add(eventType);
+        uniqueTypes.push({
+          EventType: eventType,
+          // Find first template with this type for the ID
+          EventTemplateID: eventTemplates.find(t => (t.eventtype || t.EventType) === eventType).eventtemplateid || eventTemplates.find(t => (t.eventtype || t.EventType) === eventType).EventTemplateID
+        });
+      }
+    });
+    
+    res.render("addEvent", { eventTemplates: uniqueTypes });
+  } catch (err) {
+    console.error("Error loading add event form:", err);
+    res.status(500).send("Error loading form");
+  }
+});
+
+// Submit new event
+app.post("/submitEvent", async (req, res) => {
+  if (!req.session.isLoggedIn) return res.redirect("/login");
+  
+  try {
+    const {
+      eventName,
+      eventLocation,
+      eventDateTimeStart,
+      eventDateTimeEnd,
+      eventCapacity,
+      eventRegistrationDeadline,
+      eventTemplateID
+    } = req.body;
+
+    const eventOccurrenceID = await knex("EventOccurences").insert({
+      EventName: eventName,
+      EventLocation: eventLocation,
+      EventDateTimeStart: eventDateTimeStart,
+      EventDateTimeEnd: eventDateTimeEnd,
+      EventCapacity: eventCapacity,
+      EventRegistrationDeadline: eventRegistrationDeadline,
+      EventTemplateID: eventTemplateID
+    });
+
+    res.json({ success: true, eventId: eventOccurrenceID[0] });
+  } catch (err) {
+    console.error("Error creating event:", err);
+    res.json({ success: false, message: err.message });
+  }
+});
+
+// Edit event form
+app.get("/editEvent", async (req, res) => {
+  if (!req.session.isLoggedIn) return res.redirect("/login");
+  
+  try {
+    const eventId = req.query.id;
+    const event = await knex("EventOccurences as eo")
+      .join("EventTemplates as et", "eo.EventTemplateID", "et.EventTemplateID")
+      .where("eo.EventOccurrenceID", eventId)
+      .select(
+        "eo.EventOccurrenceID",
+        "eo.EventName",
+        "eo.EventDateTimeStart",
+        "eo.EventDateTimeEnd",
+        "eo.EventLocation",
+        "eo.EventCapacity",
+        "eo.EventRegistrationDeadline",
+        "eo.EventTemplateID",
+        "et.EventType",
+        "et.EventDescription"
+      )
+      .first();
+
+    if (!event) {
+      return res.status(404).send("Event not found");
+    }
+
+    const eventTemplates = await knex("EventTemplates").select("*");
+    
+    // Get unique event types to avoid duplicates in dropdown
+    const uniqueTypes = [];
+    const seenTypes = new Set();
+    
+    eventTemplates.forEach(template => {
+      const eventType = template.eventtype || template.EventType;
+      if (eventType && !seenTypes.has(eventType)) {
+        seenTypes.add(eventType);
+        uniqueTypes.push({
+          EventType: eventType,
+          // Find first template with this type for the ID
+          EventTemplateID: eventTemplates.find(t => (t.eventtype || t.EventType) === eventType).eventtemplateid || eventTemplates.find(t => (t.eventtype || t.EventType) === eventType).EventTemplateID
+        });
+      }
+    });
+    
+    // Normalize event data
+    const normalizedEvent = {
+      EventOccurrenceID: event.eventoccurrenceid || event.EventOccurrenceID,
+      EventName: event.eventname || event.EventName,
+      EventDateTimeStart: event.eventdatetimestart || event.EventDateTimeStart,
+      EventDateTimeEnd: event.eventdatetimeend || event.EventDateTimeEnd,
+      EventLocation: event.eventlocation || event.EventLocation,
+      EventCapacity: event.eventcapacity || event.EventCapacity,
+      EventRegistrationDeadline: event.eventregistrationdeadline || event.EventRegistrationDeadline,
+      EventTemplateID: event.eventtemplateid || event.EventTemplateID
+    };
+
+    res.render("editEvent", { event: normalizedEvent, eventTemplates: uniqueTypes });
+  } catch (err) {
+    console.error("Error loading edit event form:", err);
+    res.status(500).send("Error loading form");
+  }
+});
+
+// Update event
+app.post("/updateEvent", async (req, res) => {
+  if (!req.session.isLoggedIn) return res.redirect("/login");
+  
+  try {
+    const {
+      eventId,
+      eventName,
+      eventLocation,
+      eventDateTimeStart,
+      eventDateTimeEnd,
+      eventCapacity,
+      eventRegistrationDeadline,
+      eventTemplateID
+    } = req.body;
+
+    await knex("EventOccurences")
+      .where("EventOccurrenceID", eventId)
+      .update({
+        EventName: eventName,
+        EventLocation: eventLocation,
+        EventDateTimeStart: eventDateTimeStart,
+        EventDateTimeEnd: eventDateTimeEnd,
+        EventCapacity: eventCapacity,
+        EventRegistrationDeadline: eventRegistrationDeadline,
+        EventTemplateID: eventTemplateID
+      });
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Error updating event:", err);
+    res.json({ success: false, message: err.message });
+  }
+});
+
+// Delete event
+app.post("/deleteEvent", async (req, res) => {
+  if (!req.session.isLoggedIn) return res.redirect("/login");
+  
+  try {
+    const { eventId } = req.body;
+
+    await knex("EventOccurences")
+      .where("EventOccurrenceID", eventId)
+      .del();
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Error deleting event:", err);
+    res.json({ success: false, message: err.message });
   }
 });
 
@@ -668,6 +880,14 @@ app.get("/displayParticipants", async (req, res) => {
             MilestoneDate: m.milestonedate || m.MilestoneDate || null,
           }));
 
+          // Fetch total donations for this participant
+          const donationTotal = await knex("Donations")
+            .where("ParticipantID", id)
+            .sum("DonationAmount as totalAmount")
+            .first();
+          
+          participantById.TotalDonations = donationTotal.totalamount || donationTotal.totalAmount || 0;
+
           return res.render("displayParticipants", { 
             participant: participantById, 
             milestones: normalizedMilestones,
@@ -690,12 +910,28 @@ app.get("/displayParticipants", async (req, res) => {
           "ParticipantState",
           "ParticipantZip",
           "ParticipantSchoolOrEmployer",
-          "ParticipantFieldOfInterest",
-          "TotalDonations",
+          "ParticipantFieldOfInterest"
         )
         .orderBy("ParticipantLastName", "asc");
 
-      const normalized = participants.map(normalizeParticipantRow);
+      // Fetch donation totals for each participant
+      const donationTotals = await knex("Donations")
+        .select("ParticipantID")
+        .sum("DonationAmount as totalDonations")
+        .groupBy("ParticipantID");
+
+      // Create a map of participant ID to total donations
+      const donationMap = {};
+      donationTotals.forEach((row) => {
+        donationMap[row.participantid || row.ParticipantID] = row.totaldonations || row.totalDonations || 0;
+      });
+
+      // Add total donations to each participant
+      const normalized = participants.map((p) => {
+        const normalized = normalizeParticipantRow(p);
+        normalized.TotalDonations = donationMap[p.participantid || p.ParticipantID] || 0;
+        return normalized;
+      });
       
       // Group participants by city
       const groupedByCity = {};
@@ -1395,7 +1631,224 @@ app.get("/viewMilestones", async (req, res) => {
 // DONATIONS
 // ==============================
 
-// GET /displayDonations - List all donations grouped by participant (M-level only)
+// GET /donate - Public donation form (no login required)
+app.get("/donate", (req, res) => {
+  res.render("addDonationPublic", {
+    userLevel: req.session.userLevel || null,
+    success_message: null,
+    error_message: null
+  });
+});
+
+// POST /submitDonation - Submit public donation form (no login required)
+app.post("/submitDonation", async (req, res) => {
+  try {
+    const { donorName, donorEmail, donationAmount } = req.body;
+
+    // Validation
+    if (!donorName || !donorEmail || !donationAmount) {
+      return res.render("addDonationPublic", {
+        userLevel: req.session.userLevel || null,
+        error_message: "All fields are required",
+        success_message: null
+      });
+    }
+
+    const amount = parseFloat(donationAmount);
+    if (isNaN(amount) || amount <= 0) {
+      return res.render("addDonationPublic", {
+        userLevel: req.session.userLevel || null,
+        error_message: "Please enter a valid donation amount",
+        success_message: null
+      });
+    }
+
+    // Check if donor already exists by email
+    let participant = await knex("Participants")
+      .where("ParticipantEmail", donorEmail)
+      .first();
+
+    let participantId;
+    let isNewPerson = false;
+    
+    if (participant) {
+      participantId = participant.participantid || participant.ParticipantID;
+    } else {
+      // New person - don't auto-create, instead show signup prompt
+      isNewPerson = true;
+      
+      return res.render("addDonationPublic", {
+        userLevel: req.session.userLevel || null,
+        error_message: null,
+        success_message: null,
+        isNewPerson: true,
+        donorName: donorName,
+        donorEmail: donorEmail,
+        donationAmount: donationAmount
+      });
+    }
+
+    // Insert donation record with current timestamp
+    const currentDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+    
+    // Get next available DonationID
+    const maxDonationId = await knex("Donations")
+      .max("DonationID as maxId")
+      .first();
+    const nextDonationId = (maxDonationId.maxid || 0) + 1;
+    
+    await knex("Donations").insert({
+      DonationID: nextDonationId,
+      ParticipantID: participantId,
+      DonationAmount: amount,
+      DonationDate: currentDate
+    });
+
+    // Success message
+    res.render("addDonationPublic", {
+      userLevel: req.session.userLevel || null,
+      success_message: `Thank you for your generous donation of $${amount.toFixed(2)}! Your contribution helps support our mission.`,
+      error_message: null
+    });
+  } catch (err) {
+    console.error("Error processing donation:", err);
+    console.error("Error details:", err.message, err.code);
+    console.error("Stack trace:", err.stack);
+    res.render("addDonationPublic", {
+      userLevel: req.session.userLevel || null,
+      error_message: "There was an error processing your donation. Please try again.",
+      success_message: null
+    });
+  }
+});
+
+// Show participant registration form (for new donors)
+app.get("/registerParticipant", (req, res) => {
+  const { name, email, amount } = req.query;
+  res.render("registerParticipant", {
+    userLevel: req.session.userLevel || null,
+    name: name || "",
+    email: email || "",
+    amount: amount || "0"
+  });
+});
+
+// Submit new participant registration
+app.post("/submitParticipantRegistration", async (req, res) => {
+  try {
+    const {
+      firstName,
+      lastName,
+      email,
+      donationAmount,
+      phone,
+      dateOfBirth,
+      role,
+      city,
+      state,
+      zip,
+      schoolOrEmployer,
+      fieldOfInterest
+    } = req.body;
+
+    // Validate required fields
+    if (!firstName || !email || !donationAmount || donationAmount <= 0) {
+      return res.status(400).json({ success: false, message: "Missing required fields" });
+    }
+
+    // Find max ParticipantID and increment
+    const maxID = await knex("Participants")
+      .max("ParticipantID as maxId")
+      .first();
+    const newParticipantID = (maxID.maxid || 0) + 1;
+
+    // Insert new participant with correct column names
+    await knex("Participants").insert({
+      ParticipantID: newParticipantID,
+      ParticipantFirstName: firstName || null,
+      ParticipantLastName: lastName || null,
+      ParticipantEmail: email || null,
+      ParticipantPhone: phone || null,
+      ParticipantDOB: dateOfBirth ? new Date(dateOfBirth) : null,
+      ParticipantRole: role || null,
+      ParticipantCity: city || null,
+      ParticipantState: state || null,
+      ParticipantZip: zip || null,
+      ParticipantSchoolOrEmployer: schoolOrEmployer || null,
+      ParticipantFieldOfInterest: fieldOfInterest || null
+    });
+
+    // Find max DonationID and increment
+    const maxDonationID = await knex("Donations")
+      .max("DonationID as maxId")
+      .first();
+    const newDonationID = (maxDonationID.maxid || 0) + 1;
+
+    // Record donation
+    const donationDate = new Date().toISOString().split("T")[0];
+    await knex("Donations").insert({
+      DonationID: newDonationID,
+      ParticipantID: newParticipantID,
+      DonationDate: donationDate,
+      DonationAmount: parseFloat(donationAmount)
+    });
+
+    // Return success with the new participant ID
+    res.json({ success: true, participantID: newParticipantID, donationID: newDonationID });
+  } catch (err) {
+    console.error("Error creating participant:", err);
+    console.error("Error details:", err.message, err.code);
+    console.error("Stack trace:", err.stack);
+    res.status(500).json({ success: false, message: "Error creating participant account" });
+  }
+});
+
+// Complete donation without registration
+app.post("/completeDonation", async (req, res) => {
+  try {
+    const { name, email, amount } = req.body;
+
+    // Find max ParticipantID and increment
+    const maxID = await knex("Participants")
+      .max("ParticipantID as maxId")
+      .first();
+    const newParticipantID = (maxID.maxid || 0) + 1;
+
+    // Create minimal participant record
+    const nameParts = name.split(" ");
+    const firstName = nameParts[0] || name;
+    const lastName = nameParts.slice(1).join(" ") || "";
+
+    await knex("Participants").insert({
+      ParticipantID: newParticipantID,
+      ParticipantFirstName: firstName,
+      ParticipantLastName: lastName,
+      ParticipantEmail: email
+    });
+
+    // Find max DonationID and increment
+    const maxDonationID = await knex("Donations")
+      .max("DonationID as maxId")
+      .first();
+    const newDonationID = (maxDonationID.maxid || 0) + 1;
+
+    // Record donation
+    const donationDate = new Date().toISOString().split("T")[0];
+    await db("Donations").insert({
+      DonationID: newDonationID,
+      ParticipantID: newParticipantID,
+      DonationDate: donationDate,
+      DonationAmount: parseFloat(amount)
+    });
+
+    res.json({ success: true, message: "Donation recorded successfully" });
+  } catch (err) {
+    console.error("Error completing donation:", err);
+    res.status(500).json({ success: false, message: "Error recording donation" });
+  }
+});
+
+// ==============================
 app.get("/displayDonations", async (req, res) => {
   const userLevel = req.session.userLevel || null;
   
