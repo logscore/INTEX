@@ -726,9 +726,10 @@ app.get("/displayParticipants", async (req, res) => {
 
 app.get("/displayUsers", async (req, res) => {
   if (!req.session.isLoggedIn) return res.redirect("/login");
+  if (req.session.userLevel !== "M") return res.redirect("/userDashboard");
   
   try {
-    const users = await knex("Participant").select("*");
+    const users = await knex("Users").select("*").orderBy("ID", "asc");
     
     res.render("displayUsers", {
       userLevel: req.session.userLevel || null,
@@ -743,8 +744,112 @@ app.get("/displayUsers", async (req, res) => {
   }
 });
 
-app.get("/editUser", (req, res) => {
-  res.render("editUser");
+// GET /addUser - Display form to add new user (M-level only)
+app.get("/addUser", (req, res) => {
+  if (!req.session.isLoggedIn) return res.redirect("/login");
+  if (req.session.userLevel !== "M") return res.redirect("/userDashboard");
+  
+  res.render("editUser", {
+    user: { id: null, email: "", password: "", level: "U" },
+    isNew: true,
+    userLevel: req.session.userLevel
+  });
+});
+
+// GET /editUser/:id - Display form to edit user (M-level only)
+app.get("/editUser/:id", async (req, res) => {
+  if (!req.session.isLoggedIn) return res.redirect("/login");
+  if (req.session.userLevel !== "M") return res.redirect("/userDashboard");
+  
+  try {
+    const user = await knex("Users").where("ID", parseInt(req.params.id, 10)).first();
+    if (!user) {
+      return res.status(404).send("User not found");
+    }
+    
+    res.render("editUser", {
+      user: {
+        id: user.id || user.ID,
+        email: user.email || user.Email,
+        password: user.password || user.Password,
+        level: user.level || user.Level
+      },
+      isNew: false,
+      userLevel: req.session.userLevel
+    });
+  } catch (err) {
+    console.error("Error loading user:", err);
+    res.status(500).send("Error loading user");
+  }
+});
+
+// POST /editUser/:id - Update or create user (M-level only)
+app.post("/editUser/:id", async (req, res) => {
+  if (!req.session.isLoggedIn) return res.redirect("/login");
+  if (req.session.userLevel !== "M") return res.redirect("/userDashboard");
+  
+  try {
+    const { email, password, level } = req.body;
+    const userId = req.params.id === "null" || req.params.id === "undefined" ? null : parseInt(req.params.id, 10);
+    
+    if (!email || !password || !level) {
+      return res.render("editUser", {
+        error_message: "Email, password, and level are required",
+        user: { id: userId, email, password, level },
+        isNew: !userId,
+        userLevel: req.session.userLevel
+      });
+    }
+    
+    if (userId) {
+      // Update existing user
+      await knex("Users")
+        .where("ID", userId)
+        .update({
+          Email: email,
+          Password: password,
+          Level: level
+        });
+    } else {
+      // Create new user - find next available ID
+      const lastUser = await knex("Users").select("ID").orderBy("ID", "desc").first();
+      const nextId = (lastUser?.ID || 0) + 1;
+      
+      await knex("Users").insert({
+        ID: nextId,
+        Email: email,
+        Password: password,
+        Level: level
+      });
+    }
+    
+    res.redirect("/displayUsers");
+  } catch (err) {
+    console.error("Error saving user:", err);
+    res.status(500).send("Error saving user");
+  }
+});
+
+// POST /deleteUser/:id - Delete user (M-level only)
+app.post("/deleteUser/:id", async (req, res) => {
+  if (!req.session.isLoggedIn) return res.redirect("/login");
+  if (req.session.userLevel !== "M") return res.redirect("/userDashboard");
+  
+  try {
+    const userId = parseInt(req.params.id, 10);
+    
+    // Prevent deleting the current user
+    if (userId === req.session.userId) {
+      return res.status(400).send("Cannot delete your own user account");
+    }
+    
+    await knex("Users").where("ID", userId).del();
+    
+    res.redirect("/displayUsers");
+  } catch (err) {
+    console.error("Error deleting user:", err);
+    res.status(500).send("Error deleting user");
+  }
 });
 app.get("/tableauDashboard", (req, res) => {
   if (!req.session.isLoggedIn) return res.redirect("/login");
