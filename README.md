@@ -1,4 +1,4 @@
-# INTEX - Ella Rises Event Management System
+# INTEX - Ella Rises Website
 
 INTEX repo for Group 1-5
 
