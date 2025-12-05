@@ -1,6 +1,6 @@
-# INTEX - Ella Rises Event Management System
+# INTEX - Ella Rises Website
 
-INTEX repo for the Computer Wizards
+INTEX repo for Group 1-5
 
 ## Overview
 
