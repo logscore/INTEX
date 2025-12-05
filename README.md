@@ -367,11 +367,9 @@ Main tables:
 - PostgreSQL database
 - Environment variables in `.env`
 
-### Start Server
-```bash
-cd INTEX
-bun serve
-```
+### Website location
+- **URL: https://computer-wizards.lsreeder.com/
+
 ### Test Credentials
 - **Manager Login:** `manager@gmail.com` / `password123`
 - **User Login:** `user@gmail.com` / `password123`
