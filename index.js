@@ -311,7 +311,6 @@ app.get("/displayEvents", async (req, res) => {
 
           return res.render("displayEvents", {
             event: event,
-            groupedEvents: undefined,
             userLevel: userLevel
           });
         }
@@ -417,7 +416,12 @@ app.post("/submitEvent", async (req, res) => {
       eventTemplateID
     } = req.body;
 
-    const eventOccurrenceID = await knex("EventOccurences").insert({
+    // Get the next EventOccurrenceID
+    const maxRow = await knex('EventOccurences').max('EventOccurrenceID as max').first();
+    const nextId = maxRow && maxRow.max ? parseInt(maxRow.max, 10) + 1 : 1;
+
+    const insertResult = await knex("EventOccurences").insert({
+      EventOccurrenceID: nextId,
       EventName: eventName,
       EventLocation: eventLocation,
       EventDateTimeStart: eventDateTimeStart,
@@ -427,7 +431,7 @@ app.post("/submitEvent", async (req, res) => {
       EventTemplateID: eventTemplateID
     });
 
-    res.json({ success: true, eventId: eventOccurrenceID[0] });
+    res.json({ success: true, eventId: nextId });
   } catch (err) {
     console.error("Error creating event:", err);
     res.json({ success: false, message: err.message });
