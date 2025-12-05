@@ -429,11 +429,16 @@
         
         if (visibleRows.length > 0) {
           cityGroup.style.display = '';
+          const collapseDiv = cityGroup.querySelector('.collapse');
           
-          // Auto-expand groups when searching
           if (filter.length > 0) {
-            const collapseDiv = cityGroup.querySelector('.collapse');
+            // Auto-expand groups when searching
             if (collapseDiv && !collapseDiv.classList.contains('show')) {
+              const bsCollapse = new bootstrap.Collapse(collapseDiv, { toggle: true });
+            }
+          } else {
+            // Collapse groups when search is cleared
+            if (collapseDiv && collapseDiv.classList.contains('show')) {
               const bsCollapse = new bootstrap.Collapse(collapseDiv, { toggle: true });
             }
           }

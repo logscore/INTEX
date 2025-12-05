@@ -210,19 +210,32 @@
 								<div class="card p-3">
 									<h5>New Survey</h5>
 									<form method="POST" action="/createSurvey">
-										<div class="mb-3">
-											<label class="form-label">Registration (Participant - Event) *</label>
-											<select name="registrationId" class="form-select" required>
-												<option value="">-- Select Registration --</option>
-												<% if (typeof registrations !== 'undefined') { %>
-													<% registrations.forEach(function(r) { %>
-														<option value="<%= r.registrationid || r.RegistrationID %>">
-															<%= (r.participantfirstname || r.ParticipantFirstName || '') + ' ' + (r.participantlastname || r.ParticipantLastName || '') %> - <%= r.eventname || r.EventName || 'Unknown Event' %>
-														</option>
-													<% }) %>
-												<% } %>
-											</select>
+										<div class="row">
+											<div class="col-md-6">
+												<div class="mb-3">
+													<label class="form-label">Participant *</label>
+													<select name="participantId" id="participantSelect" class="form-select" required>
+														<option value="">-- Select Participant --</option>
+														<% if (typeof participants !== 'undefined') { %>
+															<% participants.forEach(function(p) { %>
+																<option value="<%= p.participantid || p.ParticipantID %>">
+																	<%= (p.participantfirstname || p.ParticipantFirstName || '') + ' ' + (p.participantlastname || p.ParticipantLastName || '') %>
+																</option>
+															<% }) %>
+														<% } %>
+													</select>
+												</div>
+											</div>
+											<div class="col-md-6">
+												<div class="mb-3">
+													<label class="form-label">Event *</label>
+													<select name="eventId" id="eventSelect" class="form-select" required disabled>
+														<option value="">-- Select Participant First --</option>
+													</select>
+												</div>
+											</div>
 										</div>
+										<input type="hidden" name="registrationId" id="registrationId" value="">
 										<div class="row">
 											<div class="col-md-3">
 												<div class="mb-3">
@@ -288,6 +301,55 @@
 									</form>
 								</div>
 							</div>
+
+							<script>
+								// Embed registrations data from backend
+								const registrationsData = <%- JSON.stringify(typeof registrations !== 'undefined' ? registrations : []) %>;
+								
+								document.getElementById('participantSelect').addEventListener('change', function() {
+									const participantId = parseInt(this.value, 10);
+									const eventSelect = document.getElementById('eventSelect');
+									
+									// Clear event dropdown
+									eventSelect.innerHTML = '<option value="">-- Select Event --</option>';
+									
+									if (!participantId) {
+										eventSelect.disabled = true;
+										return;
+									}
+									
+									// Find all events for this participant
+									const participantRegistrations = registrationsData.filter(r => {
+										const regParticipantId = parseInt(r.participantid || r.ParticipantID, 10);
+										return regParticipantId === participantId;
+									});
+									
+									if (participantRegistrations.length === 0) {
+										eventSelect.innerHTML = '<option value="">No events for this participant</option>';
+										eventSelect.disabled = true;
+										return;
+									}
+									
+									// Populate event dropdown with unique events
+									const uniqueEvents = {};
+									participantRegistrations.forEach(reg => {
+										const eventId = reg.eventoccurrenceid || reg.EventOccurrenceID;
+										const eventName = reg.eventname || reg.EventName || 'Unknown Event';
+										if (eventId && !uniqueEvents[eventId]) {
+											uniqueEvents[eventId] = eventName;
+										}
+									});
+									
+									Object.entries(uniqueEvents).forEach(([eventId, eventName]) => {
+										const option = document.createElement('option');
+										option.value = eventId;
+										option.textContent = eventName;
+										eventSelect.appendChild(option);
+									});
+									
+									eventSelect.disabled = false;
+								});
+							</script>
 						<% } %>
 
 						<!-- Search Bar -->
@@ -458,11 +520,16 @@
 				
 				if (visibleRows.length > 0) {
 					eventGroup.style.display = '';
+					const collapseDiv = eventGroup.querySelector('.collapse');
 					
-					// Auto-expand groups when searching
 					if (filter.length > 0) {
-						const collapseDiv = eventGroup.querySelector('.collapse');
+						// Auto-expand groups when searching
 						if (collapseDiv && !collapseDiv.classList.contains('show')) {
+							const bsCollapse = new bootstrap.Collapse(collapseDiv, { toggle: true });
+						}
+					} else {
+						// Collapse groups when search is cleared
+						if (collapseDiv && collapseDiv.classList.contains('show')) {
 							const bsCollapse = new bootstrap.Collapse(collapseDiv, { toggle: true });
 						}
 					}
