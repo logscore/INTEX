@@ -275,7 +275,7 @@ app.get("/userDashboard", async (req, res) => {
 // ==============================
 app.get("/displayEvents", async (req, res) => {
   try {
-    const userLevel = req.session.userLevel || null;
+    const userLevel = (req.session.userLevel || "").toString().toUpperCase();
 
     // Fetch all events with event template info
     const events = await knex("EventOccurences as eo")
@@ -324,7 +324,7 @@ app.get("/displayEvents", async (req, res) => {
     console.error("Error loading events:", err);
     res.render("displayEvents", {
       groupedEvents: {},
-      userLevel: req.session.userLevel || null
+      userLevel: (req.session.userLevel || "").toString().toUpperCase()
     });
   }
 });
@@ -332,6 +332,12 @@ app.get("/displayEvents", async (req, res) => {
 // Add new event form
 app.get("/addEvent", async (req, res) => {
   if (!req.session.isLoggedIn) return res.redirect("/login");
+  
+  // Only managers can add events
+  const userLevel = (req.session.userLevel || "").toString().toUpperCase();
+  if (userLevel !== "M") {
+    return res.status(403).send("Unauthorized: Only managers can add events");
+  }
   
   try {
     // Fetch all event templates for dropdown
@@ -364,6 +370,12 @@ app.get("/addEvent", async (req, res) => {
 app.post("/submitEvent", async (req, res) => {
   if (!req.session.isLoggedIn) return res.redirect("/login");
   
+  // Only managers can submit events
+  const userLevel = (req.session.userLevel || "").toString().toUpperCase();
+  if (userLevel !== "M") {
+    return res.status(403).send("Unauthorized: Only managers can create events");
+  }
+  
   try {
     const {
       eventName,
@@ -395,6 +407,12 @@ app.post("/submitEvent", async (req, res) => {
 // Edit event form
 app.get("/editEvent", async (req, res) => {
   if (!req.session.isLoggedIn) return res.redirect("/login");
+  
+  // Only managers can edit events
+  const userLevel = (req.session.userLevel || "").toString().toUpperCase();
+  if (userLevel !== "M") {
+    return res.status(403).send("Unauthorized: Only managers can edit events");
+  }
   
   try {
     const eventId = req.query.id;
@@ -460,6 +478,12 @@ app.get("/editEvent", async (req, res) => {
 app.post("/updateEvent", async (req, res) => {
   if (!req.session.isLoggedIn) return res.redirect("/login");
   
+  // Only managers can update events
+  const userLevel = (req.session.userLevel || "").toString().toUpperCase();
+  if (userLevel !== "M") {
+    return res.json({ success: false, message: "Unauthorized: Only managers can update events" });
+  }
+  
   try {
     const {
       eventId,
@@ -494,6 +518,12 @@ app.post("/updateEvent", async (req, res) => {
 // Delete event
 app.post("/deleteEvent", async (req, res) => {
   if (!req.session.isLoggedIn) return res.redirect("/login");
+  
+  // Only managers can delete events
+  const userLevel = (req.session.userLevel || "").toString().toUpperCase();
+  if (userLevel !== "M") {
+    return res.json({ success: false, message: "Unauthorized: Only managers can delete events" });
+  }
   
   try {
     const { eventId } = req.body;
@@ -648,10 +678,11 @@ app.get("/displaySurveys", async (req, res) => {
       .where("p.ParticipantEmail", userEmail)
       .orderBy("e.EventDateTimeStart", "asc");
 
-    res.render("displaySurveys", { registrations });
+    res.render("displaySurveys", { registrations, userLevel });
   } catch (err) {
     console.error("Error loading surveys page:", err);
-    res.render("displaySurveys", { registrations: [] });
+    const userLevel = (req.session.userLevel || "").toString().toUpperCase();
+    res.render("displaySurveys", { registrations: [], userLevel });
   }
 });
 
@@ -963,19 +994,20 @@ app.get("/displayParticipants", async (req, res) => {
 
 app.get("/displayUsers", async (req, res) => {
   if (!req.session.isLoggedIn) return res.redirect("/login");
-  if (req.session.userLevel !== "M") return res.redirect("/userDashboard");
+  const userLevel = (req.session.userLevel || "").toString().toUpperCase();
+  if (userLevel !== "M") return res.redirect("/userDashboard");
   
   try {
     const users = await knex("Users").select("*").orderBy("ID", "asc");
     
     res.render("displayUsers", {
-      userLevel: req.session.userLevel || null,
+      userLevel: userLevel,
       users: users || []
     });
   } catch (err) {
     console.error("Error loading users:", err);
     res.render("displayUsers", {
-      userLevel: req.session.userLevel || null,
+      userLevel: userLevel,
       users: []
     });
   }
@@ -1091,9 +1123,10 @@ app.post("/deleteUser/:id", async (req, res) => {
 app.get("/tableauDashboard", (req, res) => {
   if (!req.session.isLoggedIn) return res.redirect("/login");
   
+  const userLevel = (req.session.userLevel || "").toString().toUpperCase();
   res.render("tableauDashboard", {
     isLoggedIn: req.session.isLoggedIn || false,
-    userLevel: req.session.userLevel || null
+    userLevel: userLevel
   });
 });
 
@@ -1103,6 +1136,7 @@ app.get("/displayMilestones", async (req, res) => {
 
   try {
     const userEmail = req.session.email;
+    const userLevel = (req.session.userLevel || "").toString().toUpperCase();
     const { id } = req.query;
 
     // Fetch participant by email
@@ -1111,7 +1145,7 @@ app.get("/displayMilestones", async (req, res) => {
       .first();
 
     if (!participant) {
-      return res.render("displayMilestones", { milestones: [], focusedMilestone: null, participantName: "Unknown" });
+      return res.render("displayMilestones", { milestones: [], focusedMilestone: null, participantName: "Unknown", userLevel });
     }
 
     const participantId = participant.participantid || participant.ParticipantID;
@@ -1139,16 +1173,23 @@ app.get("/displayMilestones", async (req, res) => {
       ? `${participant.participantfirstname || participant.ParticipantFirstName} ${participant.participantlastname || participant.ParticipantLastName}`
       : "Your";
 
-    res.render("displayMilestones", { milestones: normalizedMilestones, focusedMilestone, participantName, participantId });
+    res.render("displayMilestones", { milestones: normalizedMilestones, focusedMilestone, participantName, participantId, userLevel });
   } catch (err) {
     console.error("Error loading milestones:", err);
-    res.render("displayMilestones", { milestones: [], focusedMilestone: null, participantName: "Unknown" });
+    const userLevel = (req.session.userLevel || "").toString().toUpperCase();
+    res.render("displayMilestones", { milestones: [], focusedMilestone: null, participantName: "Unknown", userLevel });
   }
 });
 
 // Add a new milestone (self-reported)
 app.post("/addMilestone", async (req, res) => {
   if (!req.session.isLoggedIn) return res.redirect("/login");
+  
+  // Only managers can add milestones
+  const userLevel = (req.session.userLevel || "").toString().toUpperCase();
+  if (userLevel !== "M") {
+    return res.status(403).send("Unauthorized: Only managers can add milestones");
+  }
 
   try {
     const userEmail = req.session.email;
@@ -1203,6 +1244,12 @@ app.post("/addMilestone", async (req, res) => {
 // Update milestone (self-reported)
 app.post("/updateMilestone", async (req, res) => {
   if (!req.session.isLoggedIn) return res.redirect("/login");
+  
+  // Only managers can update milestones
+  const userLevel = (req.session.userLevel || "").toString().toUpperCase();
+  if (userLevel !== "M") {
+    return res.status(403).send("Unauthorized: Only managers can update milestones");
+  }
 
   try {
     const userEmail = req.session.email;
@@ -1310,6 +1357,12 @@ app.post("/editParticipantMilestone", async (req, res) => {
 // Delete a milestone
 app.post("/deleteMilestone", async (req, res) => {
   if (!req.session.isLoggedIn) return res.redirect("/login");
+  
+  // Only managers can delete milestones
+  const userLevel = (req.session.userLevel || "").toString().toUpperCase();
+  if (userLevel !== "M") {
+    return res.status(403).send("Unauthorized: Only managers can delete milestones");
+  }
 
   try {
     const { milestoneId, participantId } = req.body;
@@ -1851,7 +1904,7 @@ app.post("/completeDonation", async (req, res) => {
 
 // ==============================
 app.get("/displayDonations", async (req, res) => {
-  const userLevel = req.session.userLevel || null;
+  const userLevel = (req.session.userLevel || "").toString().toUpperCase();
   
   if (userLevel !== "M") {
     return res.redirect("/userDashboard");

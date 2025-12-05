@@ -305,11 +305,13 @@
 				</div>
 
 				<!-- Add Event Button -->
+				<% if (typeof userLevel !== 'undefined' && userLevel === 'M') { %>
 				<div class="mb-3">
 					<a href="/addEvent" class="btn btn-success" id="addEventBtn">
 						<i class="bi bi-plus-circle"></i> Add New Event
 					</a>
 				</div>
+				<% } %>
 
 				<!-- Events Display -->
 				<% if (typeof groupedEvents !== 'undefined' && Object.keys(groupedEvents).length > 0) { %>
@@ -399,8 +401,10 @@
 
 		<div class="focused-actions">
 			<button class="btn-close-modal" onclick="closeFocusedView()">Close</button>
+			<% if (typeof userLevel !== 'undefined' && userLevel === 'M') { %>
 			<button class="btn-edit" onclick="editEvent()">Edit</button>
 			<button class="btn-delete" onclick="deleteEvent()">Delete</button>
+			<% } %>
 		</div>
 	</div>
 </div>
