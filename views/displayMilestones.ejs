@@ -72,6 +72,7 @@
 					<div id="viewMode" class="card p-4 mb-4">
 						<h5 class="mb-3"><%= focusedMilestone.MilestoneTitle %></h5>
 						<p class="mb-1"><span class="label">Date:</span> <%= focusedMilestone.MilestoneDate ? new Date(focusedMilestone.MilestoneDate).toLocaleDateString() : '—' %></p>
+						<% if (typeof userLevel !== 'undefined' && userLevel === 'M') { %>
 						<div class="mt-3">
 							<button class="btn btn-primary me-2" onclick="toggleEditMode()">Edit</button>
 							<form method="POST" action="/deleteMilestone" style="display: inline;" onsubmit="return confirm('Delete this milestone?');">
@@ -79,9 +80,11 @@
 								<button type="submit" class="btn btn-danger">Delete</button>
 							</form>
 						</div>
+						<% } %>
 					</div>
 
 					<!-- Edit Mode -->
+					<% if (typeof userLevel !== 'undefined' && userLevel === 'M') { %>
 					<div id="editMode" class="card p-4 mb-4" style="display: none;">
 						<h5 class="mb-3">Edit Milestone</h5>
 						<form method="POST" action="/updateMilestone">
@@ -100,13 +103,17 @@
 							</div>
 						</form>
 					</div>
+					<% } %>
 				<% } %>
 
 				<hr />
 				<div class="d-flex justify-content-between align-items-center mb-2">
 					<h4 class="mb-0">Your Milestones</h4>
+					<% if (typeof userLevel !== 'undefined' && userLevel === 'M') { %>
 					<button class="btn btn-success" data-bs-toggle="collapse" data-bs-target="#addMilestoneForm" aria-expanded="false">Add Milestone</button>
+					<% } %>
 				</div>
+				<% if (typeof userLevel !== 'undefined' && userLevel === 'M') { %>
 				<div class="collapse mb-3" id="addMilestoneForm">
 					<div class="card p-3">
 						<form method="POST" action="/addMilestone">
@@ -125,6 +132,7 @@
 						</form>
 					</div>
 				</div>
+				<% } %>
 
 				<div class="mb-3">
 					<input type="text" id="searchInput" class="form-control" placeholder="Search milestones..." onkeyup="filterMilestones()">
