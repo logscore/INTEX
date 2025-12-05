@@ -53,6 +53,7 @@
           <div class="card p-3 mb-4">
             <h4>All Events</h4>
             
+            
             <!-- Add New Event -->
             <% if (typeof userLevel !== 'undefined' && userLevel === 'M') { %>
               <div class="mb-3">
@@ -61,13 +62,9 @@
             <% } %>
 
             <!-- Search Bar -->
-				<% if (typeof userLevel !== 'undefined' && userLevel === 'M') { %>
             <div class="mb-3">
               <input type="text" id="searchInput" class="form-control" placeholder="Search by event name..." onkeyup="filterEvents()">
-            </div>
-				<% } %>
-
-            <!-- Events grouped by type -->
+            </div>            <!-- Events grouped by type -->
             <% Object.entries(groupedEvents).forEach(function([eventType, typeEvents]) { %>
               <% if (typeEvents.length > 0) { %>
                 <div class="event-group">
@@ -157,59 +154,6 @@
       </div>
     </div>
   </div>
-</div>
-
-<!-- Focused View Modal -->
-<div class="focused-view" id="focusedView">
-	<div class="focused-modal">
-		<div class="focused-header">
-			<h2 id="focusedEventName"></h2>
-			<button class="close-btn" onclick="closeFocusedView()">×</button>
-		</div>
-
-		<div class="event-detail-field">
-			<label>Event Type</label>
-			<div class="value" id="focusedEventType"></div>
-		</div>
-
-		<div class="event-detail-field">
-			<label>Location</label>
-			<div class="value" id="focusedEventLocation"></div>
-		</div>
-
-		<div class="event-detail-field">
-			<label>Description</label>
-			<div class="value" id="focusedEventDescription"></div>
-		</div>
-
-		<div class="event-detail-field">
-			<label>Start Date & Time</label>
-			<div class="value" id="focusedEventStart"></div>
-		</div>
-
-		<div class="event-detail-field">
-			<label>End Date & Time</label>
-			<div class="value" id="focusedEventEnd"></div>
-		</div>
-
-		<div class="event-detail-field">
-			<label>Capacity</label>
-			<div class="value" id="focusedEventCapacity"></div>
-		</div>
-
-		<div class="event-detail-field">
-			<label>Registration Deadline</label>
-			<div class="value" id="focusedEventDeadline"></div>
-		</div>
-
-		<div class="focused-actions">
-			<button class="btn-close-modal" onclick="closeFocusedView()">Close</button>
-			<% if (typeof userLevel !== 'undefined' && userLevel === 'M') { %>
-			<button class="btn-edit" onclick="editEvent()">Edit</button>
-			<button class="btn-delete" onclick="deleteEvent()">Delete</button>
-			<% } %>
-		</div>
-	</div>
 </div>
 
 <!-- FOOTER -->

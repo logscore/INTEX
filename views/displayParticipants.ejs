@@ -174,7 +174,10 @@
           </div>
         <% } else if (typeof participant !== 'undefined' && participant && participant.ParticipantID) { %>
           <div class="card p-4 mb-4">
-            <h4><%= participant.ParticipantFirstName %> <%= participant.ParticipantLastName %> <small class="text-muted">(ID: <%= participant.ParticipantID %>)</small></h4>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h4><%= participant.ParticipantFirstName %> <%= participant.ParticipantLastName %> <small class="text-muted">(ID: <%= participant.ParticipantID %>)</small></h4>
+              <a href="/displayParticipants" class="btn btn-white btn-sm">Back to List</a>
+            </div>
             
             <!-- View Mode -->
             <div id="viewMode">
@@ -199,7 +202,8 @@
               <% if (typeof userLevel !== 'undefined' && userLevel === 'M') { %>
                 <div class="mt-3">
                   <button onclick="toggleEditMode()" class="btn btn-primary me-2">Edit Participant</button>
-                  <a href="/confirmDeleteParticipant?participantId=<%= participant.ParticipantID %>" class="btn btn-danger">Delete Participant</a>
+                  <a href="/confirmDeleteParticipant?participantId=<%= participant.ParticipantID %>" class="btn btn-danger me-2">Delete Participant</a>
+                  <a href="/displayParticipants" class="btn btn-secondary">Back to List</a>
                 </div>
               <% } %>
             </div>

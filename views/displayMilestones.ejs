@@ -3,208 +3,210 @@
 <head>
 	<meta charset="UTF-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
-	<title>My Milestones</title>
+	<title>Milestones</title>
 	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-	<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&display=swap" rel="stylesheet">
 	<style>
-		:root {
-			--cream: #f9f5ea;
-			--light-pink: #ffd8d1;
-			--pink: #f9afb1;
-			--gray: #3a3f3b;
-		}
-
-		body { background-color: var(--light-pink); font-family: Arial, sans-serif; margin:0; color:var(--gray); min-height:100vh; display:flex; flex-direction:column; }
-
-		.navbar-brand { font-weight: bold; display:flex; align-items:center; gap:6px; font-size:1.25rem; }
-
-		.btn-white { background: white; border: 2px solid var(--gray); color: var(--gray) !important; transition: 0.2s; }
-		.btn-white:hover { background: var(--gray); color: white !important; }
-
+		body { background: #ffd8d1; font-family: Arial, sans-serif; padding-top: 90px; }
 		.card { border-radius: 12px; }
-		.page-header { font-family: 'DM Serif Display', serif; font-size: 1.6rem; }
+		.milestone-header { font-family: 'DM Serif Display', serif; font-size: 1.6rem; }
 		.label { font-weight: 600; color: #444; }
-		.milestone-item { border-left: 4px solid #e45858; padding: 12px; margin-bottom: 12px; background: #f8f9fa; border-radius: 4px; cursor: pointer; }
-		.milestone-item:hover { background: #e9ecef; }
-
-		.page-wrapper { padding: 40px 20px; flex: 1; }
-
-		/* FOOTER */
-		.footer { background-color: black; color: white; height: 100px; display:flex; justify-content:center; align-items:center; margin-top:auto; width:100vw; position:relative; left:50%; right:50%; margin-left:-50vw; margin-right:-50vw; }
-		.footer-text { font-family: 'DM Serif Display', serif; font-size:1.5rem; display:flex; gap:10px; align-items:center; }
-		.copyright { text-align:center; padding:8px 0 20px; font-size:0.9rem; }
+		.milestone-group { margin-bottom: 20px; }
+		.milestone-title { cursor: pointer; padding: 12px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #e45858; }
+		.milestone-title:hover { background: #e9ecef; }
+		.milestone-row { cursor: pointer; }
+		.milestone-content { padding: 12px; background: #ffffff; border: 1px solid #dee2e6; border-top: none; border-radius: 0 0 8px 8px; }
 	</style>
 </head>
 <body>
-
-<!-- NAVBAR -->
-<nav class="navbar navbar-light bg-white shadow-sm px-4">
-  <a class="navbar-brand" href="/">
-    Ella
-    <img src="/fulllogo.jpg" alt="Ella Rises Logo" style="width:35px; height:35px; object-fit: contain; vertical-align: text-bottom; margin-left: 8px;">
-    Rises
-  </a>
-
-  <div>
-    <a href="/userDashboard" class="btn btn-white btn-sm me-2">Back to Dashboard</a>
-    <a href="/logout" class="btn btn-white btn-sm">Logout</a>
-  </div>
-</nav>
-
-<!-- PAGE -->
-<div class="page-wrapper container">
-	<div class="row justify-content-center">
-		<div class="col-lg-8">
-			<div class="card p-4 mb-4">
-				<div>
-					<h2 class="page-header"><%= participantName %>'s Milestones</h2>
-					<p class="text-muted">Track your achievements and milestones.</p>
-				</div>
-			</div>				<% if (focusedMilestone && focusedMilestone.MilestoneID) { %>
-                    
-					<hr />
-					<div class="d-flex justify-content-between align-items-center mb-3">
-						<h4>Milestone Detail</h4>
-						<a href="/displayMilestones" class="btn btn-white btn-sm">Back to Milestones</a>
-					</div>
-
-					<!-- View Mode -->
-					<div id="viewMode" class="card p-4 mb-4">
-						<h5 class="mb-3"><%= focusedMilestone.MilestoneTitle %></h5>
-						<p class="mb-1"><span class="label">Date:</span> <%= focusedMilestone.MilestoneDate ? new Date(focusedMilestone.MilestoneDate).toLocaleDateString() : '—' %></p>
-						<% if (typeof userLevel !== 'undefined' && userLevel === 'M') { %>
-						<div class="mt-3">
-							<button class="btn btn-primary me-2" onclick="toggleEditMode()">Edit</button>
-							<form method="POST" action="/deleteMilestone" style="display: inline;" onsubmit="return confirm('Delete this milestone?');">
-								<input type="hidden" name="milestoneId" value="<%= focusedMilestone.MilestoneID %>" />
-								<button type="submit" class="btn btn-danger">Delete</button>
-							</form>
+	<div class="container">
+		<div class="row justify-content-center">
+			<div class="col-md-10">
+				<div class="card p-4">
+					<div class="d-flex justify-content-between align-items-center">
+						<div>
+							<h2 class="milestone-header">Milestones Overview</h2>
+							<p class="text-muted">View all milestones achieved by participants.</p>
 						</div>
+						<% if (typeof focusedMilestone === 'undefined' || !focusedMilestone) { %>
+							<a href="/userDashboard" class="btn btn-white btn-sm">Return to Dashboard</a>
 						<% } %>
 					</div>
 
-					<!-- Edit Mode -->
-					<% if (typeof userLevel !== 'undefined' && userLevel === 'M') { %>
-					<div id="editMode" class="card p-4 mb-4" style="display: none;">
-						<h5 class="mb-3">Edit Milestone</h5>
-						<form method="POST" action="/updateMilestone">
-							<input type="hidden" name="milestoneId" value="<%= focusedMilestone.MilestoneID %>" />
-							<div class="mb-3">
-								<label class="form-label">Milestone Title</label>
-								<input type="text" name="milestoneTitle" class="form-control" value="<%= focusedMilestone.MilestoneTitle || '' %>" required />
+					<!-- Focused milestone detail (by individual milestone) -->
+					<% if (typeof focusedMilestone !== 'undefined' && focusedMilestone && focusedMilestone.MilestoneID) { %>
+						<hr />
+						<div class="d-flex justify-content-between align-items-center mb-4">
+							<h3><%= focusedMilestone.MilestoneTitle %></h3>
+							<a href="/displayMilestones" class="btn btn-white btn-sm">Back to All Milestones</a>
+						</div>
+						<div class="card p-4 mb-4">
+							<p class="mb-1"><span class="label">Participant:</span> <%= focusedMilestone.ParticipantName %> (<%= focusedMilestone.ParticipantEmail || '—' %>)</p>
+							<p class="mb-3"><span class="label">Date:</span> <%= focusedMilestone.MilestoneDate ? new Date(focusedMilestone.MilestoneDate).toLocaleDateString() : '—' %></p>
+							<% if (typeof userLevel !== 'undefined' && userLevel === 'M') { %>
+								<div class="d-flex gap-2">
+									<button class="btn btn-primary" onclick="toggleEditMode()">Edit</button>
+									<form method="POST" action="/deleteMilestone" style="display: inline;" onsubmit="return confirm('Delete this milestone?');">
+										<input type="hidden" name="milestoneId" value="<%= focusedMilestone.MilestoneID %>">
+										<button type="submit" class="btn btn-danger">Delete</button>
+									</form>
+								</div>
+							<% } %>
+						</div>
+
+						<% if (typeof userLevel !== 'undefined' && userLevel === 'M') { %>
+							<div id="editMode" class="card p-4 mb-4" style="display: none;">
+								<h5>Edit Milestone</h5>
+								<form method="POST" action="/updateMilestoneAdmin">
+									<input type="hidden" name="milestoneId" value="<%= focusedMilestone.MilestoneID %>">
+									<div class="row g-2 mt-2">
+										<div class="col-md-6">
+											<label class="form-label">Title</label>
+											<input type="text" name="milestoneTitle" class="form-control" value="<%= focusedMilestone.MilestoneTitle || '' %>" required>
+										</div>
+										<div class="col-md-6">
+											<label class="form-label">Date</label>
+											<input type="date" name="milestoneDate" class="form-control" value="<%= focusedMilestone.MilestoneDate ? new Date(focusedMilestone.MilestoneDate).toISOString().split('T')[0] : '' %>" required>
+										</div>
+									</div>
+									<div class="mt-3">
+										<button type="submit" class="btn btn-success me-2">Save Changes</button>
+										<button type="button" class="btn btn-secondary" onclick="toggleEditMode()">Cancel</button>
+									</div>
+								</form>
 							</div>
-							<div class="mb-3">
-								<label class="form-label">Achievement Date</label>
-								<input type="date" name="milestoneDate" class="form-control" value="<%= focusedMilestone.MilestoneDate ? new Date(focusedMilestone.MilestoneDate).toISOString().split('T')[0] : '' %>" required />
-							</div>
-							<div class="mt-3">
-								<button type="submit" class="btn btn-success me-2">Save</button>
-								<button type="button" class="btn btn-secondary" onclick="toggleEditMode()">Cancel</button>
-							</div>
-						</form>
-					</div>
+						<% } %>
 					<% } %>
-				<% } %>
 
-				<hr />
-				<div class="d-flex justify-content-between align-items-center mb-2">
-					<h4 class="mb-0">Your Milestones</h4>
+					<hr />
+					<div class="d-flex justify-content-between align-items-center mb-3">
+						<h4>All Milestones by Title</h4>
+						<% if (typeof userLevel !== 'undefined' && userLevel === 'M') { %>
+							<button class="btn btn-success" data-bs-toggle="collapse" data-bs-target="#addMilestoneForm" aria-expanded="false">Add Milestone</button>
+						<% } %>
+					</div>
 					<% if (typeof userLevel !== 'undefined' && userLevel === 'M') { %>
-					<button class="btn btn-success" data-bs-toggle="collapse" data-bs-target="#addMilestoneForm" aria-expanded="false">Add Milestone</button>
+						<div class="collapse mb-3" id="addMilestoneForm">
+							<div class="card p-3">
+								<form method="POST" action="/addMilestoneAdmin">
+									<div class="row g-2">
+										<div class="col-md-6">
+											<label class="form-label">Participant *</label>
+											<select name="participantId" class="form-select" required>
+												<option value="">-- Select Participant --</option>
+												<% if (typeof participants !== 'undefined') { %>
+													<% participants.forEach(function(p) { %>
+														<option value="<%= p.ParticipantID || p.participantid %>"><%= (p.ParticipantFirstName || p.participantfirstname || '') + ' ' + (p.ParticipantLastName || p.participantlastname || '') %> (<%= p.ParticipantEmail || p.participantemail || '' %>)</option>
+													<% }) %>
+												<% } %>
+											</select>
+										</div>
+										<div class="col-md-3">
+											<label class="form-label">Title *</label>
+											<input type="text" name="milestoneTitle" class="form-control" required>
+										</div>
+										<div class="col-md-3">
+											<label class="form-label">Date *</label>
+											<input type="date" name="milestoneDate" class="form-control" required>
+										</div>
+									</div>
+									<div class="mt-3">
+										<button type="submit" class="btn btn-primary">Add Milestone</button>
+										<button type="button" class="btn btn-secondary" data-bs-toggle="collapse" data-bs-target="#addMilestoneForm">Cancel</button>
+									</div>
+								</form>
+							</div>
+						</div>
 					<% } %>
-				</div>
-				<% if (typeof userLevel !== 'undefined' && userLevel === 'M') { %>
-				<div class="collapse mb-3" id="addMilestoneForm">
-					<div class="card p-3">
-						<form method="POST" action="/addMilestone">
-							<div class="mb-3">
-								<label class="form-label">Milestone Title</label>
-								<input type="text" class="form-control" name="milestoneTitle" placeholder="e.g., Bachelor's Degree, Internship" required />
-							</div>
-							<div class="mb-3">
-								<label class="form-label">Achievement Date</label>
-								<input type="date" class="form-control" name="milestoneDate" required />
-							</div>
-							<div class="d-flex justify-content-end">
-								<button type="submit" class="btn btn-primary me-2">Create</button>
-								<button type="button" class="btn btn-secondary" data-bs-toggle="collapse" data-bs-target="#addMilestoneForm">Cancel</button>
-							</div>
-						</form>
-					</div>
-				</div>
-				<% } %>
 
-				<div class="mb-3">
-					<input type="text" id="searchInput" class="form-control" placeholder="Search milestones..." onkeyup="filterMilestones()">
-				</div>
-
-				<% if (!milestones || milestones.length === 0) { %>
-					<div class="alert alert-info">
-						<strong>No milestones yet.</strong> Keep working towards your goals!
+					<div class="mb-3">
+						<input type="text" id="searchInput" class="form-control" placeholder="Search milestones..." onkeyup="filterMilestones()">
 					</div>
-				<% } else { %>
-					<div class="card p-4 mb-4">
-						<% milestones.forEach(function(m) { %>
-							<div class="milestone-item" data-name="<%= (m.MilestoneTitle || '').toLowerCase() %>" onclick="window.location.href='/displayMilestones?id=<%= m.MilestoneID %>'">
-								<p class="mb-1"><span class="label"><%= m.MilestoneTitle %></span></p>
-								<small class="text-muted"><%= m.MilestoneDate ? new Date(m.MilestoneDate).toLocaleDateString() : '—' %></small>
+
+					<% Object.entries(milestoneGroups || {}).forEach(function([title, titleMilestones]) { %>
+						<% if (titleMilestones.length > 0) { %>
+							<div class="milestone-group">
+								<div class="milestone-title" data-bs-toggle="collapse" data-bs-target="#title-<%= title.replace(/\s+/g, '-').toLowerCase() %>" aria-expanded="false">
+									<strong><%= title %></strong>
+									<span class="float-end badge bg-secondary"><%= titleMilestones.length %> milestone<%= titleMilestones.length !== 1 ? 's' : '' %></span>
+								</div>
+								<div class="collapse" id="title-<%= title.replace(/\s+/g, '-').toLowerCase() %>">
+									<div class="milestone-content">
+										<div class="table-responsive">
+											<table class="table table-sm table-striped mb-0">
+												<thead class="table-dark">
+													<tr>
+														<th>Participant</th>
+														<th>Date</th>
+													</tr>
+												</thead>
+												<tbody>
+													<% titleMilestones.forEach(function(milestone) { %>
+														<tr class="milestone-row" data-name="<%= (milestone.ParticipantName).toLowerCase() %>" onclick="window.location.href='/displayMilestones?id=<%= milestone.MilestoneID %>';" style="cursor: pointer;">
+															<td><%= milestone.ParticipantName %></td>
+															<td><%= milestone.MilestoneDate ? new Date(milestone.MilestoneDate).toLocaleDateString() : '—' %></td>
+														</tr>
+													<% }) %>
+												</tbody>
+											</table>
+										</div>
+									</div>
+								</div>
 							</div>
-						<% }) %>
-					</div>
-				<% } %>
-
+						<% } %>
+					<% }) %>
+				</div>
 			</div>
 		</div>
 	</div>
-</div>
-
-<!-- FOOTER -->
-<div style="width: 100%; display: flex; flex-direction: column; background-color: black;">
-  <div class="footer">
-    <div class="footer-text">
-      Ella
-      <img src="/EllaRises.jpg" alt="Logo" style="width:30px; height:auto; vertical-align: middle;">
-      Rises
-    </div>
-  </div>
-
-  <p class="copyright" style="background-color: black; color: white; margin: 0;">© 2025 Ella Rises. All Rights Reserved.</p>
-</div>
 
 	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
 	<script>
 		function toggleEditMode() {
 			const viewMode = document.getElementById('viewMode');
 			const editMode = document.getElementById('editMode');
-			if (!viewMode || !editMode) return;
-			if (viewMode.style.display === 'none') {
-				viewMode.style.display = 'block';
-				editMode.style.display = 'none';
-			} else {
-				viewMode.style.display = 'none';
-				editMode.style.display = 'block';
-			}
+			if (viewMode) viewMode.style.display = viewMode.style.display === 'none' ? '' : 'none';
+			if (editMode) editMode.style.display = editMode.style.display === 'none' ? '' : 'none';
 		}
 
 		function filterMilestones() {
 			const input = document.getElementById('searchInput');
-			const filter = input ? input.value.toLowerCase() : '';
-			const items = document.getElementsByClassName('milestone-item');
-			const cardContainer = document.querySelector('.card:has(.milestone-item)');
-
-			for (let i = 0; i < items.length; i++) {
-				const name = items[i].getAttribute('data-name') || '';
-				items[i].style.display = name.indexOf(filter) > -1 ? '' : 'none';
-			}
+			if (!input) return;
+			const query = input.value.toLowerCase();
+			const milestoneRows = document.querySelectorAll('.milestone-row');
+			const milestoneGroups = document.querySelectorAll('.milestone-group');
 			
-			// Show the card container if there are visible items
-			if (cardContainer && filter.length > 0) {
-				const visibleItems = Array.from(items).filter(item => item.style.display !== 'none');
-				if (visibleItems.length > 0) {
-					cardContainer.style.display = '';
+			milestoneRows.forEach(row => {
+				const name = row.getAttribute('data-name');
+				if (name.includes(query)) {
+					row.style.display = '';
+				} else {
+					row.style.display = 'none';
 				}
-			}
+			});
+
+			milestoneGroups.forEach(group => {
+				const visibleRows = Array.from(group.querySelectorAll('.milestone-row')).filter(row => row.style.display !== 'none');
+				
+				if (visibleRows.length > 0) {
+					group.style.display = '';
+					const collapseDiv = group.querySelector('.collapse');
+					
+					if (query.length > 0) {
+						if (collapseDiv && !collapseDiv.classList.contains('show')) {
+							const bsCollapse = new bootstrap.Collapse(collapseDiv, { toggle: true });
+						}
+					} else {
+						if (collapseDiv && collapseDiv.classList.contains('show')) {
+							const bsCollapse = new bootstrap.Collapse(collapseDiv, { toggle: true });
+						}
+					}
+				} else {
+					group.style.display = 'none';
+				}
+			});
 		}
 	</script>
+
 </body>
 </html>

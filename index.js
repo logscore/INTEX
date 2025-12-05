@@ -56,8 +56,7 @@ const knex = require("knex")({
     user: process.env.POSTGRES_USER,
     password: process.env.POSTGRES_PASSWORD,
     database: process.env.POSTGRES_DATABASE,
-    port: process.env.POSTGRES_PORT,
-    ssl: { rejectUnauthorized: false }
+    port: process.env.POSTGRES_PORT
   },
   wrapIdentifier: (value, origImpl) => origImpl(value.toLowerCase())
 });
@@ -735,8 +734,95 @@ app.get("/displaySurveys", async (req, res) => {
         });
     }
 
-    // Regular users: show their registrations so they can submit surveys
-    const registrations = await knex("registrations as r")
+    // Regular users: check if viewing a specific survey
+    if (surveyId) {
+      try {
+        const survey = await knex("Surveys as s")
+          .join("Registrations as r", "r.RegistrationID", "s.RegistrationID")
+          .join("Participants as p", "p.ParticipantID", "r.ParticipantID")
+          .leftJoin("EventOccurences as e", "e.EventOccurrenceID", "r.EventOccurrenceID")
+          .select(
+            "s.SurveyID",
+            "s.RegistrationID",
+            "s.SurveySatisfactionScore",
+            "s.SurveyUsefulnessScore",
+            "s.SurveyInstructorScore",
+            "s.SurveyRecommendationScore",
+            "s.SurveyOverallScore",
+            "s.SurveyNPSBucket",
+            "s.SurveyComments",
+            "s.SurveySubmissionDate",
+            "p.ParticipantID",
+            "p.ParticipantEmail",
+            "p.ParticipantFirstName",
+            "p.ParticipantLastName",
+            "p.ParticipantPhone",
+            "e.EventName",
+            "e.EventDateTimeStart"
+          )
+          .where("s.SurveyID", parseInt(surveyId, 10))
+          .first();
+
+        if (!survey) {
+          return res.status(404).send("Survey not found");
+        }
+
+        const normalizedSurvey = normalizeSurveyRow(survey);
+        return res.render("displaySurveys", { survey: normalizedSurvey, userLevel });
+      } catch (err) {
+        console.error("Error loading survey detail:", err);
+        return res.status(500).send("Error loading survey");
+      }
+    }
+
+    // Regular users: show all survey submissions
+    const surveys = await knex("Surveys as s")
+      .join("Registrations as r", "r.RegistrationID", "s.RegistrationID")
+      .join("Participants as p", "p.ParticipantID", "r.ParticipantID")
+      .leftJoin("EventOccurences as e", "e.EventOccurrenceID", "r.EventOccurrenceID")
+      .select(
+        "s.SurveyID",
+        "s.RegistrationID",
+        "s.SurveySatisfactionScore",
+        "s.SurveyUsefulnessScore",
+        "s.SurveyInstructorScore",
+        "s.SurveyRecommendationScore",
+        "s.SurveyOverallScore",
+        "s.SurveyNPSBucket",
+        "s.SurveyComments",
+        "s.SurveySubmissionDate",
+        "p.ParticipantEmail",
+        "p.ParticipantFirstName",
+        "p.ParticipantLastName",
+        "e.EventName"
+      )
+      .orderBy("s.SurveySubmissionDate", "desc");
+
+    // Normalize all survey rows to CamelCase for template consistency
+    const normalizedSurveys = surveys.map(normalizeSurveyRow);
+
+    // Group surveys by event and filter out ones with null scores
+    const groupedByEvent = {};
+    normalizedSurveys.forEach((survey) => {
+      const eventName = survey.EventName || "Unknown Event";
+      if (!groupedByEvent[eventName]) {
+        groupedByEvent[eventName] = [];
+      }
+
+      // Only include surveys where all score fields are non-null
+      const hasAllScores =
+        survey.SurveySatisfactionScore !== null &&
+        survey.SurveyUsefulnessScore !== null &&
+        survey.SurveyInstructorScore !== null &&
+        survey.SurveyRecommendationScore !== null;
+
+      if (hasAllScores) {
+        groupedByEvent[eventName].push(survey);
+      }
+    });
+
+    // Fetch user's registrations for submitting surveys
+    const userRegistrations = await knex("registrations as r")
       .join("participants as p", "p.ParticipantID", "r.ParticipantID")
       .join(
         "EventOccurences as e",
@@ -747,7 +833,43 @@ app.get("/displaySurveys", async (req, res) => {
       .where("p.ParticipantEmail", userEmail)
       .orderBy("e.EventDateTimeStart", "asc");
 
-    res.render("displaySurveys", { registrations, userLevel });
+    // Fetch all participants and registrations for add survey form
+    const participants = await knex("Participants")
+      .select("ParticipantID", "ParticipantFirstName", "ParticipantLastName", "ParticipantEmail")
+      .orderBy("ParticipantLastName", "asc");
+  
+    const registrations = await knex("Registrations as r")
+      .join("Participants as p", "p.ParticipantID", "r.ParticipantID")
+      .join("EventOccurences as e", "e.EventOccurrenceID", "r.EventOccurrenceID")
+      .select(
+        "r.RegistrationID",
+        "p.ParticipantID",
+        "p.ParticipantFirstName",
+        "p.ParticipantLastName",
+        "p.ParticipantEmail",
+        "e.EventOccurrenceID",
+        "e.EventName",
+        "e.EventDateTimeStart"
+      )
+      .orderBy("e.EventName", "asc");
+
+    // Fetch all events for the form
+    const events = await knex("EventOccurences as eo")
+      .join("EventTemplates as et", "eo.EventTemplateID", "et.EventTemplateID")
+      .select(
+        "eo.EventOccurrenceID",
+        "eo.EventName",
+        "eo.EventDateTimeStart"
+      )
+      .orderBy("eo.EventName", "asc");
+
+    return res.render("displaySurveys", { 
+      groupedSurveys: groupedByEvent, 
+      registrations: userRegistrations,
+      participants: participants.map(normalizeParticipantRow),
+      events: events,
+      userLevel 
+    });
   } catch (err) {
     console.error("Error loading surveys page:", err);
     const userLevel = (req.session.userLevel || "").toString().toUpperCase();
@@ -975,104 +1097,95 @@ app.get("/displayParticipants", async (req, res) => {
     // Normalize session level to uppercase for comparison (DB uses 'M' or 'U')
     const userLevel = (req.session.userLevel || "").toString().toUpperCase();
 
-    // Admin/Manager users ('M') can view participants. Show all by default for 'M'.
-    if (userLevel === "M") {
-      // If an id is provided, show single participant detail
-      if (req.query.id) {
-        const id = parseInt(req.query.id, 10);
-        if (!isNaN(id)) {
-          let participantById = await knex("Participants")
-            .where("ParticipantID", id)
-            .first();
+    // Both managers and regular users can view the participant list
+    // Managers ('M') can also edit/delete. Users can just view.
+    
+    // If an id is provided, show single participant detail
+    if (req.query.id) {
+      const id = parseInt(req.query.id, 10);
+      if (!isNaN(id)) {
+        let participantById = await knex("Participants")
+          .where("ParticipantID", id)
+          .first();
 
-          participantById = normalizeParticipantRow(participantById);
+        participantById = normalizeParticipantRow(participantById);
 
-          // Fetch milestones for this participant
-          const milestones = await knex("Milestones")
-            .where("ParticipantID", id)
-            .orderBy("MilestoneDate", "desc");
+        // Fetch milestones for this participant
+        const milestones = await knex("Milestones")
+          .where("ParticipantID", id)
+          .orderBy("MilestoneDate", "desc");
 
-          const normalizedMilestones = milestones.map((m) => ({
-            MilestoneID: m.milestoneid || m.MilestoneID || null,
-            ParticipantID: m.participantid || m.ParticipantID || null,
-            MilestoneTitle: m.milestonetitle || m.MilestoneTitle || null,
-            MilestoneDate: m.milestonedate || m.MilestoneDate || null,
-          }));
+        const normalizedMilestones = milestones.map((m) => ({
+          MilestoneID: m.milestoneid || m.MilestoneID || null,
+          ParticipantID: m.participantid || m.ParticipantID || null,
+          MilestoneTitle: m.milestonetitle || m.MilestoneTitle || null,
+          MilestoneDate: m.milestonedate || m.MilestoneDate || null,
+        }));
 
-          // Fetch total donations for this participant
-          const donationTotal = await knex("Donations")
-            .where("ParticipantID", id)
-            .sum("DonationAmount as totalAmount")
-            .first();
-          
-          participantById.TotalDonations = donationTotal.totalamount || donationTotal.totalAmount || 0;
+        // Fetch total donations for this participant
+        const donationTotal = await knex("Donations")
+          .where("ParticipantID", id)
+          .sum("DonationAmount as totalAmount")
+          .first();
+        
+        participantById.TotalDonations = donationTotal.totalamount || donationTotal.totalAmount || 0;
 
-          return res.render("displayParticipants", { 
-            participant: participantById, 
-            milestones: normalizedMilestones,
-            userLevel 
-          });
-        }
+        return res.render("displayParticipants", { 
+          participant: participantById, 
+          milestones: normalizedMilestones,
+          userLevel 
+        });
       }
-
-      // Otherwise show the full participant list for managers
-      const participants = await knex("Participants")
-        .select(
-          "ParticipantID",
-          "ParticipantEmail",
-          "ParticipantFirstName",
-          "ParticipantLastName",
-          "ParticipantDOB",
-          "ParticipantRole",
-          "ParticipantPhone",
-          "ParticipantCity",
-          "ParticipantState",
-          "ParticipantZip",
-          "ParticipantSchoolOrEmployer",
-          "ParticipantFieldOfInterest"
-        )
-        .orderBy("ParticipantLastName", "asc");
-
-      // Fetch donation totals for each participant
-      const donationTotals = await knex("Donations")
-        .select("ParticipantID")
-        .sum("DonationAmount as totalDonations")
-        .groupBy("ParticipantID");
-
-      // Create a map of participant ID to total donations
-      const donationMap = {};
-      donationTotals.forEach((row) => {
-        donationMap[row.participantid || row.ParticipantID] = row.totaldonations || row.totalDonations || 0;
-      });
-
-      // Add total donations to each participant
-      const normalized = participants.map((p) => {
-        const normalized = normalizeParticipantRow(p);
-        normalized.TotalDonations = donationMap[p.participantid || p.ParticipantID] || 0;
-        return normalized;
-      });
-      
-      // Group participants by city
-      const groupedByCity = {};
-      normalized.forEach((p) => {
-        const city = p.ParticipantCity || "Unknown City";
-        if (!groupedByCity[city]) {
-          groupedByCity[city] = [];
-        }
-        groupedByCity[city].push(p);
-      });
-      
-      return res.render("displayParticipants", { groupedParticipants: groupedByCity, userLevel });
     }
 
-    // Regular users: fetch their participant record by email
-    let participant = await knex("Participants")
-      .where("ParticipantEmail", userEmail)
-      .first();
+    // Show the full participant list for both managers and regular users
+    const participants = await knex("Participants")
+      .select(
+        "ParticipantID",
+        "ParticipantEmail",
+        "ParticipantFirstName",
+        "ParticipantLastName",
+        "ParticipantDOB",
+        "ParticipantRole",
+        "ParticipantPhone",
+        "ParticipantCity",
+        "ParticipantState",
+        "ParticipantZip",
+        "ParticipantSchoolOrEmployer",
+        "ParticipantFieldOfInterest"
+      )
+      .orderBy("ParticipantLastName", "asc");
 
-    participant = normalizeParticipantRow(participant);
+    // Fetch donation totals for each participant
+    const donationTotals = await knex("Donations")
+      .select("ParticipantID")
+      .sum("DonationAmount as totalDonations")
+      .groupBy("ParticipantID");
 
-    res.render("displayParticipants", { participant, userLevel });
+    // Create a map of participant ID to total donations
+    const donationMap = {};
+    donationTotals.forEach((row) => {
+      donationMap[row.participantid || row.ParticipantID] = row.totaldonations || row.totalDonations || 0;
+    });
+
+    // Add total donations to each participant
+    const normalized = participants.map((p) => {
+      const normalized = normalizeParticipantRow(p);
+      normalized.TotalDonations = donationMap[p.participantid || p.ParticipantID] || 0;
+      return normalized;
+    });
+    
+    // Group participants by city
+    const groupedByCity = {};
+    normalized.forEach((p) => {
+      const city = p.ParticipantCity || "Unknown City";
+      if (!groupedByCity[city]) {
+        groupedByCity[city] = [];
+      }
+      groupedByCity[city].push(p);
+    });
+    
+    return res.render("displayParticipants", { groupedParticipants: groupedByCity, userLevel });
   } catch (err) {
     console.error("Error loading participants:", err);
     res.render("displayParticipants", { participant: null, userLevel: (req.session.userLevel||"").toString().toUpperCase() });
@@ -1159,6 +1272,17 @@ app.post("/editUser/:id", async (req, res) => {
     
     if (userId) {
       // Update existing user
+      // Check if email is already taken by another user
+      const existingUser = await knex("Users").where("Email", email).where("ID", "!=", userId).first();
+      if (existingUser) {
+        return res.render("editUser", {
+          error_message: "Email is already in use by another user",
+          user: { id: userId, email, password, level },
+          isNew: false,
+          userLevel: req.session.userLevel
+        });
+      }
+      
       await knex("Users")
         .where("ID", userId)
         .update({
@@ -1167,9 +1291,23 @@ app.post("/editUser/:id", async (req, res) => {
           Level: level
         });
     } else {
-      // Create new user - find next available ID
-      const lastUser = await knex("Users").select("ID").orderBy("ID", "desc").first();
-      const nextId = (lastUser?.ID || 0) + 1;
+      // Create new user - check if email already exists
+      const existingUser = await knex("Users").where("Email", email).first();
+      if (existingUser) {
+        return res.render("editUser", {
+          error_message: "Email is already in use",
+          user: { id: null, email, password, level },
+          isNew: true,
+          userLevel: req.session.userLevel
+        });
+      }
+      
+      // Find next available ID by getting all user IDs and finding the max
+      const allUsers = await knex("Users").select("ID");
+      console.log("All users IDs:", allUsers);
+      const maxId = allUsers.length > 0 ? Math.max(...allUsers.map(u => u.id || u.ID || 0)) : 0;
+      const nextId = maxId + 1;
+      console.log("Max ID found:", maxId, "Next ID to use:", nextId);
       
       await knex("Users").insert({
         ID: nextId,
@@ -1182,7 +1320,12 @@ app.post("/editUser/:id", async (req, res) => {
     res.redirect("/displayUsers");
   } catch (err) {
     console.error("Error saving user:", err);
-    res.status(500).send("Error saving user");
+    res.status(500).render("editUser", {
+      error_message: `Error saving user: ${err.message || err}`,
+      user: { id: null, email: req.body.email || "", password: req.body.password || "", level: req.body.level || "U" },
+      isNew: true,
+      userLevel: req.session.userLevel
+    });
   }
 });
 
@@ -1226,41 +1369,55 @@ app.get("/displayMilestones", async (req, res) => {
     const userLevel = (req.session.userLevel || "").toString().toUpperCase();
     const { id } = req.query;
 
-    // Fetch participant by email
-    const participant = await knex("Participants")
-      .where("ParticipantEmail", userEmail)
-      .first();
+    // Fetch all milestones with participant info for all users to view
+    const milestones = await knex("Milestones as m")
+      .join("Participants as p", "p.ParticipantID", "m.ParticipantID")
+      .select(
+        "m.MilestoneID",
+        "m.MilestoneTitle",
+        "m.MilestoneDate",
+        "p.ParticipantID",
+        "p.ParticipantFirstName",
+        "p.ParticipantLastName",
+        "p.ParticipantEmail"
+      )
+      .orderBy("m.MilestoneDate", "desc");
 
-    if (!participant) {
-      return res.render("displayMilestones", { milestones: [], focusedMilestone: null, participantName: "Unknown", userLevel });
-    }
+    // Fetch participants for add form (managers only)
+    const participants = await knex("Participants")
+      .select("ParticipantID", "ParticipantFirstName", "ParticipantLastName", "ParticipantEmail")
+      .orderBy("ParticipantLastName", "asc");
 
-    const participantId = participant.participantid || participant.ParticipantID;
-
-    // Fetch milestones for this participant
-    const milestones = await knex("Milestones")
-      .where("ParticipantID", participantId)
-      .orderBy("MilestoneDate", "desc");
-
-    // Normalize milestone keys (lowercase from DB)
-    const normalizedMilestones = milestones.map((m) => ({
-      MilestoneID: m.milestoneid || m.MilestoneID || null,
-      ParticipantID: m.participantid || m.ParticipantID || null,
-      MilestoneTitle: m.milestonetitle || m.MilestoneTitle || null,
-      MilestoneDate: m.milestonedate || m.MilestoneDate || null,
-    }));
-
-    // Focused milestone when id is provided
+    // Normalize and group by title
+    const grouped = {};
     let focusedMilestone = null;
-    if (id) {
-      focusedMilestone = normalizedMilestones.find((m) => `${m.MilestoneID}` === `${id}`) || null;
-    }
+    
+    milestones.forEach((m) => {
+      const title = m.milestonetitle || m.MilestoneTitle || "Untitled";
+      const participantName = (m.participantfirstname || m.ParticipantFirstName || "") + " " + (m.participantlastname || m.ParticipantLastName || "");
+      const item = {
+        MilestoneID: m.milestoneid || m.MilestoneID,
+        MilestoneTitle: title,
+        MilestoneDate: m.milestonedate || m.MilestoneDate,
+        ParticipantID: m.participantid || m.ParticipantID,
+        ParticipantName: participantName.trim(),
+        ParticipantEmail: m.participantemail || m.ParticipantEmail,
+      };
+      
+      if (id && (m.milestoneid || m.MilestoneID) === parseInt(id, 10)) {
+        focusedMilestone = item;
+      }
+      
+      if (!grouped[title]) grouped[title] = [];
+      grouped[title].push(item);
+    });
 
-    const participantName = participant.participantfirstname || participant.ParticipantFirstName
-      ? `${participant.participantfirstname || participant.ParticipantFirstName} ${participant.participantlastname || participant.ParticipantLastName}`
-      : "Your";
-
-    res.render("displayMilestones", { milestones: normalizedMilestones, focusedMilestone, participantName, participantId, userLevel });
+    res.render("displayMilestones", { 
+      milestoneGroups: grouped,
+      focusedMilestone: focusedMilestone || null, 
+      participants,
+      userLevel 
+    });
   } catch (err) {
     console.error("Error loading milestones:", err);
     const userLevel = (req.session.userLevel || "").toString().toUpperCase();
@@ -1992,10 +2149,6 @@ app.post("/completeDonation", async (req, res) => {
 // ==============================
 app.get("/displayDonations", async (req, res) => {
   const userLevel = (req.session.userLevel || "").toString().toUpperCase();
-  
-  if (userLevel !== "M") {
-    return res.redirect("/userDashboard");
-  }
 
   try {
     const donationIdQuery = req.query.id ? parseInt(req.query.id, 10) : null;
