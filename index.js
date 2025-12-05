@@ -2028,8 +2028,13 @@ app.post("/addDonation", async (req, res) => {
       return res.status(400).send("Missing required fields");
     }
 
+    // Get the next DonationID
+    const maxRow = await knex('Donations').max('DonationID as max').first();
+    const nextId = maxRow && maxRow.max ? parseInt(maxRow.max, 10) + 1 : 1;
+
     // Insert new donation
     await knex("Donations").insert({
+      DonationID: nextId,
       ParticipantID: parseInt(participantId, 10),
       DonationAmount: parseFloat(donationAmount),
       DonationDate: donationDate || null,
