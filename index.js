@@ -57,7 +57,6 @@ const knex = require("knex")({
     password: process.env.POSTGRES_PASSWORD,
     database: process.env.POSTGRES_DATABASE,
     port: process.env.POSTGRES_PORT,
-    ssl: {rejectUnauthorized: false}
   },
   wrapIdentifier: (value, origImpl) => origImpl(value.toLowerCase())
 });
@@ -277,6 +276,48 @@ app.get("/displayEvents", async (req, res) => {
   try {
     const userLevel = (req.session.userLevel || "").toString().toUpperCase();
 
+    // If an id is provided, show single event detail
+    if (req.query.id) {
+      const id = parseInt(req.query.id, 10);
+      if (!isNaN(id)) {
+        const eventData = await knex("EventOccurences as eo")
+          .join("EventTemplates as et", "eo.EventTemplateID", "et.EventTemplateID")
+          .select(
+            "eo.EventOccurrenceID",
+            "eo.EventName",
+            "eo.EventDateTimeStart",
+            "eo.EventDateTimeEnd",
+            "eo.EventLocation",
+            "eo.EventCapacity",
+            "eo.EventRegistrationDeadline",
+            "et.EventType",
+            "et.EventDescription"
+          )
+          .where("eo.EventOccurrenceID", id)
+          .first();
+
+        if (eventData) {
+          const event = {
+            EventOccurrenceID: eventData.eventoccurrenceid || eventData.EventOccurrenceID,
+            EventName: eventData.eventname || eventData.EventName,
+            EventDateTimeStart: eventData.eventdatetimestart || eventData.EventDateTimeStart,
+            EventDateTimeEnd: eventData.eventdatetimeend || eventData.EventDateTimeEnd,
+            EventLocation: eventData.eventlocation || eventData.EventLocation,
+            EventCapacity: eventData.eventcapacity || eventData.EventCapacity,
+            EventRegistrationDeadline: eventData.eventregistrationdeadline || eventData.EventRegistrationDeadline,
+            EventType: eventData.eventtype || eventData.EventType,
+            EventDescription: eventData.eventdescription || eventData.EventDescription
+          };
+
+          return res.render("displayEvents", {
+            event: event,
+            userLevel: userLevel
+          });
+        }
+      }
+    }
+
+    // Otherwise show the full event list
     // Fetch all events with event template info
     const events = await knex("EventOccurences as eo")
       .join("EventTemplates as et", "eo.EventTemplateID", "et.EventTemplateID")
@@ -387,7 +428,12 @@ app.post("/submitEvent", async (req, res) => {
       eventTemplateID
     } = req.body;
 
-    const eventOccurrenceID = await knex("EventOccurences").insert({
+    // Get the next EventOccurrenceID
+    const maxRow = await knex('EventOccurences').max('EventOccurrenceID as max').first();
+    const nextId = maxRow && maxRow.max ? parseInt(maxRow.max, 10) + 1 : 1;
+
+    const insertResult = await knex("EventOccurences").insert({
+      EventOccurrenceID: nextId,
       EventName: eventName,
       EventLocation: eventLocation,
       EventDateTimeStart: eventDateTimeStart,
@@ -397,7 +443,7 @@ app.post("/submitEvent", async (req, res) => {
       EventTemplateID: eventTemplateID
     });
 
-    res.json({ success: true, eventId: eventOccurrenceID[0] });
+    res.json({ success: true, eventId: nextId });
   } catch (err) {
     console.error("Error creating event:", err);
     res.json({ success: false, message: err.message });
