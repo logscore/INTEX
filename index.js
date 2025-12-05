@@ -55,8 +55,7 @@ const knex = require("knex")({
     user: process.env.POSTGRES_USER,
     password: process.env.POSTGRES_PASSWORD,
     database: process.env.POSTGRES_DATABASE,
-    port: process.env.POSTGRES_PORT,
-    ssl: { rejectUnauthorized: false }
+    port: process.env.POSTGRES_PORT
   },
   wrapIdentifier: (value, origImpl) => origImpl(value.toLowerCase())
 });
@@ -101,6 +100,20 @@ function normalizeSurveyRow(row) {
     ParticipantFirstName: row.participantfirstname || row.ParticipantFirstName || null,
     ParticipantLastName: row.participantlastname || row.ParticipantLastName || null,
     EventName: row.eventname || row.EventName || null,
+  };
+}
+
+// Helper: normalize a donation DB row (which has lowercase keys from PG)
+function normalizeDonationRow(row) {
+  if (!row) return null;
+  return {
+    DonationID: row.donationid || row.DonationID || null,
+    ParticipantID: row.participantid || row.ParticipantID || null,
+    DonationDate: row.donationdate || row.DonationDate || null,
+    DonationAmount: row.donationamount || row.DonationAmount || null,
+    ParticipantFirstName: row.participantfirstname || row.ParticipantFirstName || null,
+    ParticipantLastName: row.participantlastname || row.ParticipantLastName || null,
+    ParticipantEmail: row.participantemail || row.ParticipantEmail || null,
   };
 }
 
@@ -1270,6 +1283,164 @@ app.get("/viewMilestones", async (req, res) => {
   } catch (err) {
     console.error("Error loading milestones for M-level:", err);
     res.render("viewMilestones", { milestoneGroups: {}, focusedMilestone: null, participants: [], userLevel });
+  }
+});
+
+// ==============================
+// DONATIONS
+// ==============================
+
+// GET /displayDonations - List all donations grouped by participant (M-level only)
+app.get("/displayDonations", async (req, res) => {
+  const userLevel = req.session.userLevel || null;
+  
+  if (userLevel !== "M") {
+    return res.redirect("/userDashboard");
+  }
+
+  try {
+    const donationIdQuery = req.query.id ? parseInt(req.query.id, 10) : null;
+
+    // Fetch all donations with participant info
+    const donations = await knex("Donations as d")
+      .join("Participants as p", "p.ParticipantID", "d.ParticipantID")
+      .select(
+        "d.DonationID",
+        "d.DonationDate",
+        "d.DonationAmount",
+        "p.ParticipantID",
+        "p.ParticipantFirstName",
+        "p.ParticipantLastName",
+        "p.ParticipantEmail"
+      )
+      .orderBy("d.DonationDate", "desc");
+
+    // Fetch participants for add form
+    const participants = await knex("Participants")
+      .select("ParticipantID", "ParticipantFirstName", "ParticipantLastName", "ParticipantEmail")
+      .orderBy("ParticipantLastName", "asc");
+
+    // Normalize and group by participant name
+    const grouped = {};
+    let focusedDonation = null;
+    
+    donations.forEach((d) => {
+      const participantName = (d.participantfirstname || d.ParticipantFirstName || "") + " " + (d.participantlastname || d.ParticipantLastName || "");
+      const item = {
+        DonationID: d.donationid || d.DonationID,
+        DonationDate: d.donationdate || d.DonationDate,
+        DonationAmount: d.donationamount || d.DonationAmount,
+        ParticipantID: d.participantid || d.ParticipantID,
+        ParticipantName: participantName.trim(),
+        ParticipantEmail: d.participantemail || d.ParticipantEmail,
+      };
+      
+      if (donationIdQuery && (d.donationid || d.DonationID) === donationIdQuery) {
+        focusedDonation = item;
+      }
+      
+      if (!grouped[participantName.trim()]) grouped[participantName.trim()] = [];
+      grouped[participantName.trim()].push(item);
+    });
+
+    return res.render("displayDonations", {
+      donationGroups: grouped,
+      focusedDonation: focusedDonation || null,
+      participants,
+      userLevel,
+    });
+  } catch (err) {
+    console.error("Error loading donations:", err);
+    res.render("displayDonations", { donationGroups: {}, focusedDonation: null, participants: [], userLevel: "M" });
+  }
+});
+
+// POST /addDonation - Add a new donation (M-level only)
+app.post("/addDonation", async (req, res) => {
+  const userLevel = req.session.userLevel || null;
+  
+  if (userLevel !== "M") {
+    return res.status(403).send("Unauthorized");
+  }
+
+  try {
+    const { participantId, donationAmount, donationDate } = req.body;
+
+    if (!participantId || !donationAmount) {
+      return res.status(400).send("Missing required fields");
+    }
+
+    // Insert new donation
+    await knex("Donations").insert({
+      ParticipantID: parseInt(participantId, 10),
+      DonationAmount: parseFloat(donationAmount),
+      DonationDate: donationDate || null,
+    });
+
+    // Redirect back to donations list
+    res.redirect("/displayDonations");
+  } catch (err) {
+    console.error("Error adding donation:", err);
+    res.status(500).send("Error adding donation");
+  }
+});
+
+// POST /updateDonation - Update a donation (M-level only)
+app.post("/updateDonation", async (req, res) => {
+  const userLevel = req.session.userLevel || null;
+  
+  if (userLevel !== "M") {
+    return res.status(403).send("Unauthorized");
+  }
+
+  try {
+    const { donationId, donationAmount, donationDate } = req.body;
+
+    if (!donationId || !donationAmount) {
+      return res.status(400).send("Missing required fields");
+    }
+
+    // Update donation
+    await knex("Donations")
+      .where("DonationID", parseInt(donationId, 10))
+      .update({
+        DonationAmount: parseFloat(donationAmount),
+        DonationDate: donationDate || null,
+      });
+
+    // Redirect back to donations list
+    res.redirect("/displayDonations?id=" + donationId);
+  } catch (err) {
+    console.error("Error updating donation:", err);
+    res.status(500).send("Error updating donation");
+  }
+});
+
+// POST /deleteDonation - Delete a donation (M-level only)
+app.post("/deleteDonation", async (req, res) => {
+  const userLevel = req.session.userLevel || null;
+  
+  if (userLevel !== "M") {
+    return res.status(403).send("Unauthorized");
+  }
+
+  try {
+    const { donationId } = req.body;
+
+    if (!donationId) {
+      return res.status(400).send("Missing donation ID");
+    }
+
+    // Delete donation
+    await knex("Donations")
+      .where("DonationID", parseInt(donationId, 10))
+      .del();
+
+    // Redirect back to donations list
+    res.redirect("/displayDonations");
+  } catch (err) {
+    console.error("Error deleting donation:", err);
+    res.status(500).send("Error deleting donation");
   }
 });
 

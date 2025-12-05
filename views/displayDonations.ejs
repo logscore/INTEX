@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Donations</title>
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+	<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&display=swap" rel="stylesheet">
+	<style>
+		:root {
+			--cream: #f9f5ea;
+			--light-pink: #ffd8d1;
+			--pink: #f9afb1;
+			--gray: #3a3f3b;
+		}
+
+		body { background-color: var(--light-pink); font-family: Arial, sans-serif; margin:0; color:var(--gray); min-height:100vh; display:flex; flex-direction:column; }
+
+		.navbar-brand { font-weight: bold; display:flex; align-items:center; gap:6px; font-size:1.25rem; }
+
+		.btn-white { background: white; border: 2px solid var(--gray); color: var(--gray) !important; transition: 0.2s; }
+		.btn-white:hover { background: var(--gray); color: white !important; }
+
+		.card { border-radius: 12px; }
+		.donation-header { font-family: 'DM Serif Display', serif; font-size: 1.6rem; }
+		.participant-group { margin-bottom: 20px; }
+		.participant-header { cursor: pointer; padding: 12px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #e45858; }
+		.participant-header:hover { background: #e9ecef; }
+		.participant-content { padding: 12px; background: #ffffff; border: 1px solid #dee2e6; border-top: none; border-radius: 0 0 8px 8px; }
+		.label { font-weight: 600; color: #444; }
+		.donation-row { cursor: pointer; }
+
+		.page-wrapper { padding: 40px 20px; flex: 1; }
+
+		/* FOOTER */
+		.footer { background-color: black; color: white; height: 100px; display:flex; justify-content:center; align-items:center; margin-top:auto; width:100vw; position:relative; left:50%; right:50%; margin-left:-50vw; margin-right:-50vw; }
+		.footer-text { font-family: 'DM Serif Display', serif; font-size:1.5rem; display:flex; gap:10px; align-items:center; }
+		.copyright { text-align:center; padding:8px 0 20px; font-size:0.9rem; }
+	</style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar navbar-light bg-white shadow-sm px-4">
+  <a class="navbar-brand" href="/">
+    Ella
+    <img src="/fulllogo.jpg" alt="Ella Rises Logo" style="width:35px; height:35px; object-fit: contain; vertical-align: text-bottom; margin-left: 8px;">
+    Rises
+  </a>
+
+  <div>
+    <a href="/userDashboard" class="btn btn-white btn-sm me-2">Back to Dashboard</a>
+    <a href="/logout" class="btn btn-white btn-sm">Logout</a>
+  </div>
+</nav>
+
+<!-- PAGE -->
+<div class="page-wrapper container">
+	<div class="row justify-content-center">
+		<div class="col-md-10">
+			<div class="card p-4">
+				<div class="d-flex justify-content-between align-items-center mb-4">
+					<div>
+						<h2 class="donation-header">Donations</h2>
+						<p class="text-muted">View and manage all donations.</p>
+					</div>
+					<% if (typeof focusedDonation === 'undefined' || !focusedDonation) { %>
+						<a href="/userDashboard" class="btn btn-white btn-sm">Return to Dashboard</a>
+					<% } %>
+				</div>
+
+				<!-- Focused donation detail -->
+				<% if (typeof focusedDonation !== 'undefined' && focusedDonation && focusedDonation.DonationID) { %>
+					<hr />
+					<div class="d-flex justify-content-between align-items-center mb-4">
+						<h3>Donation Detail</h3>
+						<a href="/displayDonations" class="btn btn-white btn-sm">Back to All Donations</a>
+					</div>
+					<div class="card p-4 mb-4">
+						<p class="mb-1"><span class="label">Donor:</span> <%= focusedDonation.ParticipantName %> (<%= focusedDonation.ParticipantEmail || '—' %>)</p>
+						<p class="mb-1"><span class="label">Amount:</span> $<%= parseFloat(focusedDonation.DonationAmount).toFixed(2) %></p>
+						<p class="mb-3"><span class="label">Date:</span> <%= focusedDonation.DonationDate ? new Date(focusedDonation.DonationDate).toLocaleDateString() : '—' %></p>
+						<% if (typeof userLevel !== 'undefined' && userLevel === 'M') { %>
+							<div class="d-flex gap-2">
+								<button class="btn btn-primary" onclick="toggleEditMode()">Edit</button>
+								<form method="POST" action="/deleteDonation" style="display: inline;" onsubmit="return confirm('Delete this donation?');">
+									<input type="hidden" name="donationId" value="<%= focusedDonation.DonationID %>">
+									<button type="submit" class="btn btn-danger">Delete</button>
+								</form>
+							</div>
+						<% } %>
+					</div>
+
+					<% if (typeof userLevel !== 'undefined' && userLevel === 'M') { %>
+						<div id="editMode" class="card p-4 mb-4" style="display: none;">
+							<h5>Edit Donation</h5>
+							<form method="POST" action="/updateDonation">
+								<input type="hidden" name="donationId" value="<%= focusedDonation.DonationID %>">
+								<div class="row g-2 mt-2">
+									<div class="col-md-6">
+										<label class="form-label">Amount *</label>
+										<input type="number" name="donationAmount" class="form-control" value="<%= focusedDonation.DonationAmount || '' %>" step="0.01" min="0" required>
+									</div>
+									<div class="col-md-6">
+										<label class="form-label">Date</label>
+										<input type="date" name="donationDate" class="form-control" value="<%= focusedDonation.DonationDate ? new Date(focusedDonation.DonationDate).toISOString().split('T')[0] : '' %>">
+									</div>
+								</div>
+								<div class="mt-3">
+									<button type="submit" class="btn btn-success me-2">Save Changes</button>
+									<button type="button" class="btn btn-secondary" onclick="toggleEditMode()">Cancel</button>
+								</div>
+							</form>
+						</div>
+					<% } %>
+				<% } %>
+
+				<hr />
+				<div class="d-flex justify-content-between align-items-center mb-3">
+					<h4>All Donations by Donor</h4>
+					<% if (typeof userLevel !== 'undefined' && userLevel === 'M') { %>
+						<button class="btn btn-success" data-bs-toggle="collapse" data-bs-target="#addDonationForm" aria-expanded="false">Add Donation</button>
+					<% } %>
+				</div>
+
+				<% if (typeof userLevel !== 'undefined' && userLevel === 'M') { %>
+					<div class="collapse mb-3" id="addDonationForm">
+						<div class="card p-3">
+							<form method="POST" action="/addDonation">
+								<div class="row g-2">
+									<div class="col-md-6">
+										<label class="form-label">Participant *</label>
+										<select name="participantId" class="form-select" required>
+											<option value="">-- Select Donor --</option>
+											<% if (typeof participants !== 'undefined') { %>
+												<% participants.forEach(function(p) { %>
+													<option value="<%= p.ParticipantID || p.participantid %>"><%= (p.ParticipantFirstName || p.participantfirstname || '') + ' ' + (p.ParticipantLastName || p.participantlastname || '') %> (<%= p.ParticipantEmail || p.participantemail || '' %>)</option>
+												<% }) %>
+											<% } %>
+										</select>
+									</div>
+									<div class="col-md-3">
+										<label class="form-label">Amount *</label>
+										<input type="number" name="donationAmount" class="form-control" step="0.01" min="0" required>
+									</div>
+									<div class="col-md-3">
+										<label class="form-label">Date</label>
+										<input type="date" name="donationDate" class="form-control">
+									</div>
+								</div>
+								<div class="mt-3 d-flex justify-content-end">
+									<button type="submit" class="btn btn-primary me-2">Create</button>
+									<button type="button" class="btn btn-secondary" data-bs-toggle="collapse" data-bs-target="#addDonationForm">Cancel</button>
+								</div>
+							</form>
+						</div>
+					</div>
+				<% } %>
+
+				<div class="mb-3">
+					<input type="text" id="searchInput" class="form-control" placeholder="Search by donor name or email..." onkeyup="filterDonations()">
+				</div>
+
+				<% if (typeof donationGroups !== 'undefined' && donationGroups && Object.keys(donationGroups).length > 0) { %>
+					<% Object.entries(donationGroups).forEach(function([participantName, donationsForParticipant]) { %>
+						<% if (donationsForParticipant.length > 0) { %>
+							<% const totalAmount = donationsForParticipant.reduce((sum, d) => sum + parseFloat(d.DonationAmount || 0), 0); %>
+							<div class="participant-group" data-name="<%= participantName.toLowerCase() %>">
+								<div class="participant-header" data-bs-toggle="collapse" data-bs-target="#participant-<%= participantName.replace(/\s+/g, '-').toLowerCase() %>" aria-expanded="false">
+									<strong><%= participantName %></strong>
+									<span class="float-end badge bg-secondary"><%= donationsForParticipant.length %> donation(s) | $<%= totalAmount.toFixed(2) %></span>
+								</div>
+								<div class="collapse" id="participant-<%= participantName.replace(/\s+/g, '-').toLowerCase() %>">
+									<div class="participant-content">
+										<div class="table-responsive">
+											<table class="table table-sm table-striped mb-0">
+												<thead class="table-dark">
+													<tr>
+														<th>Amount</th>
+														<th>Date</th>
+														<th>Email</th>
+													</tr>
+												</thead>
+												<tbody>
+													<% donationsForParticipant.forEach(function(d) { %>
+														<tr class="donation-row" data-name="<%= (participantName + ' ' + (d.ParticipantEmail || '')).toLowerCase() %>" onclick="window.location.href='/displayDonations?id=<%= d.DonationID %>'">
+															<td>$<%= parseFloat(d.DonationAmount).toFixed(2) %></td>
+															<td><%= d.DonationDate ? new Date(d.DonationDate).toLocaleDateString() : '—' %></td>
+															<td><small class="text-muted"><%= d.ParticipantEmail || '—' %></small></td>
+														</tr>
+													<% }) %>
+												</tbody>
+											</table>
+										</div>
+									</div>
+								</div>
+							</div>
+						<% } %>
+					<% }) %>
+				<% } else { %>
+					<hr />
+					<div class="alert alert-info">
+						<strong>No donations found.</strong>
+					</div>
+				<% } %>
+			</div>
+		</div>
+	</div>
+</div>
+
+<!-- FOOTER -->
+<footer class="footer">
+	<div class="footer-text">
+		Ella
+		<img src="/fulllogo.jpg" alt="Ella Rises Logo" style="width:40px; height:40px; object-fit: contain;">
+		Rises
+	</div>
+	<div class="copyright">&copy; 2024 Ella Rises. All rights reserved.</div>
+</footer>
+
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+	<script>
+		function filterDonations() {
+			const query = (document.getElementById('searchInput')?.value || '').toLowerCase();
+			document.querySelectorAll('.participant-group').forEach(group => {
+				const name = group.getAttribute('data-name') || '';
+				let showGroup = name.includes(query);
+				group.querySelectorAll('.donation-row').forEach(row => {
+					const rowName = row.getAttribute('data-name') || '';
+					const match = rowName.includes(query) || name.includes(query);
+					row.style.display = match ? '' : 'none';
+					if (match) showGroup = true;
+				});
+				group.style.display = showGroup ? '' : 'none';
+			});
+		}
+
+		function toggleEditMode() {
+			const editCard = document.getElementById('editMode');
+			if (!editCard) return;
+			const isHidden = editCard.style.display === 'none' || editCard.style.display === '';
+			editCard.style.display = isHidden ? 'block' : 'none';
+		}
+	</script>
+</body>
+</html>
