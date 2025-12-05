@@ -16,24 +16,24 @@ This application meets all requirements outlined in the Fall 2025 INTEX Grading 
 
 ### 1. External Landing Page ✅
 
-**Professionalism (4 points):** 
+**Professionalism:** 
 - Professional Bootstrap 5.3.3 design with consistent styling
 - Clean typography using DM Serif Display font
 - Color scheme: cream (#f9f5ea), light pink (#ffd8d1), pink (#f9afb1), gray (#3a3f3b)
 
-**Welcome Landing Page (4 points):**
+**Welcome Landing Page:**
 - Home page (`/`) explains the objective of Ella Rises
 - Mission-driven content explaining the organization's purpose
 - Professional footer with company branding
 
-**Link to Donations Page (1 point):**
+**Link to Donations Page:**
 - Visitor donations page accessible at `/visitingDonations`
 - No login required - available to all visitors
 - Allows non-registered users to contribute
 
 ### 2. Login System ✅
 
-**Manager or Common User Login (2 points):**
+**Manager or Common User Login:**
 - Secure login page at `/login`
 - Two user roles supported:
   - **Manager (M):** Full CRUD access to all data
@@ -42,30 +42,30 @@ This application meets all requirements outlined in the Fall 2025 INTEX Grading 
 
 ### 3. Navigation System ✅
 
-**User Maintenance - Manager Only (1 point):**
+**User Maintenance - Manager Only:**
 - `/displayUsers` - Managers can view, add, edit, delete user accounts
 - User maintenance not accessible to regular users
 
-**Participants - Users View, Managers Maintain (1 point):**
+**Participants - Users View, Managers Maintain:**
 - `/displayParticipants` - All users can view and search participants
 - Managers can add, edit, delete, and manage milestones for participants
 
-**Events - Users View, Managers Maintain (1 point):**
+**Events - Users View, Managers Maintain:**
 - `/displayEvents` - All users can view and search events grouped by type
 - Managers can add, edit, delete events
 - Focused event detail view with query parameters (?id=)
 
-**Post Surveys - Users View, Managers Maintain (1 point):**
+**Post Surveys - Users View, Managers Maintain:**
 - `/displaySurveys` - All users can view survey submissions grouped by event
 - Users can submit surveys for their registered events
 - Managers can add, edit, delete survey responses
 
-**Milestones - Users View, Managers Maintain (1 point):**
+**Milestones - Users View, Managers Maintain:**
 - `/displayMilestones` - All users can view all milestones grouped by title
 - Managers can add, edit, delete milestones
 - Milestone tracking per participant
 
-**Donations - Users View, Managers Maintain (1 point):**
+**Donations - Users View, Managers Maintain:**
 - `/displayDonations` - All users can view donations grouped by participant
 - Managers can add, edit, delete donation records
 - Visitor donations form for non-registered donors
@@ -74,14 +74,14 @@ This application meets all requirements outlined in the Fall 2025 INTEX Grading 
 
 ## Detailed Feature Implementation
 
-### Visitor Donations ✅ (7 points)
+### Visitor Donations ✅
 
-**Professionalism (4 points):**
+**Professionalism:**
 - Professional donation form with clear labels
 - Responsive Bootstrap design
 - Proper form validation
 
-**Add User Information & Donation (3 points):**
+**Add User Information & Donation:**
 - Form collects:
   - Participant information (first name, last name, email, phone)
   - Donation amount
@@ -90,24 +90,24 @@ This application meets all requirements outlined in the Fall 2025 INTEX Grading 
 
 ---
 
-### User Maintenance ✅ (11 points)
+### User Maintenance ✅
 
-**Professionalism (4 points):**
+**Professionalism:**
 - Clean, organized interface
 - Consistent styling across all pages
 - Professional error handling with user-friendly messages
 
-**Login Required (2 points):**
+**Login Required:**
 - Session-based authentication required
 - Redirects to login if not authenticated
 - Protected routes with `req.session.isLoggedIn` checks
 
-**Display & Navigation with Search (1 point):**
+**Display & Navigation with Search:**
 - Users displayed in a table format
 - Search functionality filters by email
 - Navigation between user list and detail views
 
-**Maintain (Edit, Delete, Add) - Manager Only (4 points):**
+**Maintain (Edit, Delete, Add) - Manager Only:**
 - Managers can add new users with auto-incremented ID generation
 - Managers can edit user details (email, password, level)
 - Managers can delete user accounts
@@ -115,24 +115,24 @@ This application meets all requirements outlined in the Fall 2025 INTEX Grading 
 
 ---
 
-### Participant Maintenance ✅ (17 points)
+### Participant Maintenance ✅
 
-**Professionalism (5 points):**
+**Professionalism:**
 - Attractive Bootstrap card layout
 - Professional data presentation
 - Consistent color scheme and typography
 
-**Login Required (2 points):**
+**Login Required:**
 - All participant views require authentication
 - Session verification on all routes
 
-**Display & Navigation with Search (1 point):**
+**Display & Navigation with Search:**
 - Participants displayed grouped by city
 - Search bar filters participants by name
 - Auto-expand/collapse groups on search matches
 - Detailed participant view with back navigation
 
-**Maintain (Edit, Delete, Add) - Manager Only (5 points):**
+**Maintain (Edit, Delete, Add) - Manager Only:**
 - Managers can add new participants with auto-generated IDs
 - Managers can edit all participant fields:
   - Name, email, phone, DOB
@@ -142,7 +142,7 @@ This application meets all requirements outlined in the Fall 2025 INTEX Grading 
 - Frontend buttons hidden from non-managers
 - Backend enforces manager-only access with 403 responses
 
-**Maintain Milestones for Participants (5 points):**
+**Maintain Milestones for Participants:**
 - Managers can add milestones from the participant detail page
 - Managers can edit milestone dates and descriptions
 - Managers can delete participant milestones
@@ -150,25 +150,25 @@ This application meets all requirements outlined in the Fall 2025 INTEX Grading 
 
 ---
 
-### Event Maintenance ✅ (11 points)
+### Event Maintenance ✅
 
-**Professionalism (4 points):**
+**Professionalism:**
 - Professional event display with clear information hierarchy
 - Event grouped by type for easy navigation
 - Responsive design
 
-**Login Required (2 points):**
+**Login Required:**
 - Authentication required for access
 - Session verification on all event routes
 
-**Display & Navigation with Search (1 point):**
+**Display & Navigation with Search:**
 - Events grouped by event type (collapsible)
 - Search functionality filters events by name
 - Auto-expand groups containing search results
 - Detailed event view with all event information
 - Back to list navigation
 
-**Maintain (Edit, Delete, Add) - Manager Only (4 points):**
+**Maintain (Edit, Delete, Add) - Manager Only:**
 - Managers can add new events with auto-generated EventOccurrenceID
 - Managers can edit event details:
   - Event name, type, location
@@ -180,25 +180,25 @@ This application meets all requirements outlined in the Fall 2025 INTEX Grading 
 
 ---
 
-### Post Surveys Maintenance ✅ (11 points)
+### Post Surveys Maintenance ✅
 
-**Professionalism (4 points):**
+**Professionalism:**
 - Professional survey submission interface
 - Clear score scale (1-5)
 - Organized table display
 
-**Login Required (2 points):**
+**Login Required:**
 - Authentication required to view surveys
 - Session verification
 
-**Display & Navigation with Search (1 point):**
+**Display & Navigation with Search:**
 - Surveys grouped by event name
 - Search filters by participant name
 - Auto-expand/collapse on search
 - Detailed survey view shows all responses and comments
 - Back button for easy navigation
 
-**Maintain (Edit, Delete, Add) - Manager Only (4 points):**
+**Maintain (Edit, Delete, Add) - Manager Only:**
 - Managers can add new survey submissions manually
 - Managers can edit survey responses:
   - Satisfaction, usefulness, instructor, recommendation scores
@@ -211,25 +211,25 @@ This application meets all requirements outlined in the Fall 2025 INTEX Grading 
 
 ---
 
-### Milestones Maintenance ✅ (11 points)
+### Milestones Maintenance ✅
 
-**Professionalism (4 points):**
+**Professionalism:**
 - Professional milestone display with clear organization
 - Grouped by milestone title
 - Clean, readable table format
 
-**Login Required (2 points):**
+**Login Required:**
 - All milestone views require authentication
 - Protected routes with session checks
 
-**Display & Navigation with Search (1 point):**
+**Display & Navigation with Search:**
 - Milestones grouped by milestone title (collapsible)
 - Search functionality filters by milestone details
 - Auto-expand/collapse groups on search matches
 - Focused milestone view showing all participants who achieved it
 - Back to list navigation
 
-**Maintain (Edit, Delete, Add) - Manager Only (4 points):**
+**Maintain (Edit, Delete, Add) - Manager Only:**
 - Managers can add new milestones with auto-generated MilestoneID
 - Managers can edit milestone information:
   - Milestone title and description
@@ -241,25 +241,25 @@ This application meets all requirements outlined in the Fall 2025 INTEX Grading 
 
 ---
 
-### Donations Maintenance ✅ (11 points)
+### Donations Maintenance ✅
 
-**Professionalism (4 points):**
+**Professionalism:**
 - Professional donation tracking interface
 - Organized by participant with donation history
 - Clear display of amounts and dates
 
-**Login Required (2 points):**
+**Login Required:**
 - Authentication required to view donation management
 - Session verification on routes
 
-**Display & Navigation with Search (1 point):**
+**Display & Navigation with Search:**
 - Donations grouped by participant name
 - Search filters donations
 - Auto-expand/collapse on search
 - Detailed donation view
 - Back to list navigation
 
-**Maintain (Edit, Delete, Add) - Manager Only (4 points):**
+**Maintain (Edit, Delete, Add) - Manager Only:**
 - Managers can add new donations with auto-generated DonationID
 - Managers can edit donation details:
   - Donation amount
@@ -272,7 +272,7 @@ This application meets all requirements outlined in the Fall 2025 INTEX Grading 
 
 ---
 
-### Code Comments & Documentation ✅ (3 points)
+### Code Comments & Documentation ✅
 
 **Comprehensive Documentation:**
 - **README.md** - This file, thoroughly documenting all features
@@ -392,34 +392,4 @@ bun serve
 
 Server runs on `http://localhost:3000`
 
-### Test Credentials
-- **Manager Login:** `1@1` / `1`
-- **User Login:** `test@test.com` / `test123`
-
----
-
-## Verification Checklist for Graders
-
-- [ ] External Landing Page is professional and explains Ella Rises
-- [ ] Visitor donation page accessible without login
-- [ ] Login works for both managers and users
-- [ ] Navigation shows correct access levels (manager vs user)
-- [ ] User Maintenance accessible only to managers
-- [ ] Participants page shows all participants with search
-- [ ] Events page shows grouped events with search
-- [ ] Surveys page shows all surveys with user submission capability
-- [ ] Milestones page shows all milestones grouped by title
-- [ ] Donations page shows all donations with grouping
-- [ ] All CRUD operations work for managers only
-- [ ] Users cannot see delete/edit buttons
-- [ ] Backend returns 403 for unauthorized actions
-- [ ] Search functionality works on all pages
-- [ ] Detail views show focused information with back buttons
-- [ ] Database properly stores and retrieves all data
-
----
-
-## Support
-
-For questions about implementation or grading, contact the Computer Wizards development team.
 
