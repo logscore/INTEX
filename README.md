@@ -14,7 +14,7 @@ This application meets all requirements outlined in the Fall 2025 INTEX Grading 
 
 ## Rubric Criteria Implementation
 
-### 1. External Landing Page ✅
+### 1. External Landing Page 
 
 **Professionalism:** 
 - Professional Bootstrap 5.3.3 design with consistent styling
@@ -31,7 +31,7 @@ This application meets all requirements outlined in the Fall 2025 INTEX Grading 
 - No login required - available to all visitors
 - Allows non-registered users to contribute
 
-### 2. Login System ✅
+### 2. Login System 
 
 **Manager or Common User Login:**
 - Secure login page at `/login`
@@ -40,7 +40,7 @@ This application meets all requirements outlined in the Fall 2025 INTEX Grading 
   - **User (U):** Read-only view access; can submit surveys for registered events
 - Session management with persistent authentication
 
-### 3. Navigation System ✅
+### 3. Navigation System 
 
 **User Maintenance - Manager Only:**
 - `/displayUsers` - Managers can view, add, edit, delete user accounts
@@ -74,7 +74,7 @@ This application meets all requirements outlined in the Fall 2025 INTEX Grading 
 
 ## Detailed Feature Implementation
 
-### Visitor Donations ✅
+### Visitor Donations 
 
 **Professionalism:**
 - Professional donation form with clear labels
@@ -90,7 +90,7 @@ This application meets all requirements outlined in the Fall 2025 INTEX Grading 
 
 ---
 
-### User Maintenance ✅
+### User Maintenance 
 
 **Professionalism:**
 - Clean, organized interface
@@ -115,7 +115,7 @@ This application meets all requirements outlined in the Fall 2025 INTEX Grading 
 
 ---
 
-### Participant Maintenance ✅
+### Participant Maintenance 
 
 **Professionalism:**
 - Attractive Bootstrap card layout
@@ -150,7 +150,7 @@ This application meets all requirements outlined in the Fall 2025 INTEX Grading 
 
 ---
 
-### Event Maintenance ✅
+### Event Maintenance 
 
 **Professionalism:**
 - Professional event display with clear information hierarchy
@@ -180,7 +180,7 @@ This application meets all requirements outlined in the Fall 2025 INTEX Grading 
 
 ---
 
-### Post Surveys Maintenance ✅
+### Post Surveys Maintenance 
 
 **Professionalism:**
 - Professional survey submission interface
@@ -211,7 +211,7 @@ This application meets all requirements outlined in the Fall 2025 INTEX Grading 
 
 ---
 
-### Milestones Maintenance ✅
+### Milestones Maintenance 
 
 **Professionalism:**
 - Professional milestone display with clear organization
@@ -241,7 +241,7 @@ This application meets all requirements outlined in the Fall 2025 INTEX Grading 
 
 ---
 
-### Donations Maintenance ✅
+### Donations Maintenance 
 
 **Professionalism:**
 - Professional donation tracking interface
@@ -272,7 +272,7 @@ This application meets all requirements outlined in the Fall 2025 INTEX Grading 
 
 ---
 
-### Code Comments & Documentation ✅
+### Code Comments & Documentation 
 
 **Comprehensive Documentation:**
 - **README.md** - This file, thoroughly documenting all features
@@ -287,7 +287,7 @@ This application meets all requirements outlined in the Fall 2025 INTEX Grading 
 
 ---
 
-## Extra Mile Features 🌟
+## Extra Mile Features 
 
 1. **Visitor Donations with Automatic Participant Registration**
    - Non-registered visitors can donate and automatically create a participant profile
@@ -316,12 +316,7 @@ This application meets all requirements outlined in the Fall 2025 INTEX Grading 
    - Backend enforces access with 403 Forbidden responses
    - Session-based authentication throughout
 
-5. **Role-Based Data Display**
-   - Users see read-only versions of all data
-   - Managers see full CRUD interfaces
-   - Consistent across all data management pages
-
-6. **Data Grouping & Organization**
+5. **Data Grouping & Organization**
    - Participants grouped by city
    - Events grouped by type
    - Surveys grouped by event
@@ -329,28 +324,16 @@ This application meets all requirements outlined in the Fall 2025 INTEX Grading 
    - Donations grouped by participant
    - Improves data navigation and comprehension
 
-7. **Professional Error Handling**
+6. **Professional Error Handling**
    - User-friendly error messages
    - Field validation
    - Duplicate email detection for users
    - Helpful guidance on form requirements
 
-8. **Database ID Generation**
-   - Custom ID generation for entities without auto-increment
-   - Proper max() queries for sequential ID assignment
-   - Prevents duplicate key errors
-
-9. **Responsive Bootstrap Design**
+7. **Responsive Bootstrap Design**
    - Mobile-friendly layout
    - Professional color scheme
    - Consistent typography
-
-10. **Comprehensive TA Documentation**
-    - README specifically designed for grading
-    - Clear instructions for testing each criterion
-    - Login credentials provided
-    - Feature explanations aligned with rubric
-
 ---
 
 ## Technology Stack
