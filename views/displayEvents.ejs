@@ -1,417 +1,175 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<meta charset="UTF-8" />
-	<meta name="viewport" content="width=device-width, initial-scale=1" />
-	<title>Manage Events - Ella Rises</title>
-	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-	<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&display=swap" rel="stylesheet">
-	<style>
-		:root {
-			--cream: #f9f5ea;
-			--light-pink: #ffd8d1;
-			--pink: #f9afb1;
-			--gray: #3a3f3b;
-		}
-
-		body { 
-			background-color: var(--light-pink); 
-			font-family: Arial, sans-serif; 
-			margin: 0; 
-			color: var(--gray); 
-			min-height: 100vh; 
-			display: flex; 
-			flex-direction: column; 
-		}
-
-		.navbar-brand { 
-			font-weight: bold; 
-			display: flex; 
-			align-items: center; 
-			gap: 6px; 
-			font-size: 1.25rem; 
-		}
-
-		.btn-white { 
-			background: white; 
-			border: 2px solid var(--gray); 
-			color: var(--gray) !important; 
-			transition: 0.2s; 
-		}
-
-		.btn-white:hover { 
-			background: var(--gray); 
-			color: white !important; 
-		}
-
-		.btn-success { 
-			background-color: #28a745; 
-			border: none; 
-			color: white; 
-		}
-
-		.btn-success:hover { 
-			background-color: #218838; 
-			color: white !important; 
-		}
-
-		.card { 
-			border-radius: 12px; 
-		}
-
-		.event-group { 
-			margin-bottom: 20px; 
-		}
-
-		.event-header { 
-			cursor: pointer; 
-			padding: 12px; 
-			background: #f8f9fa; 
-			border-radius: 8px; 
-			border-left: 4px solid #e45858; 
-			font-weight: bold;
-			color: #e45858;
-		}
-
-		.event-header:hover { 
-			background: #e9ecef; 
-		}
-
-		.event-content { 
-			padding: 12px; 
-			background: #ffffff; 
-			border: 1px solid #dee2e6; 
-			border-top: none; 
-			border-radius: 0 0 8px 8px; 
-		}
-
-		.event-item {
-			padding: 10px;
-			border-bottom: 1px solid #eee;
-			cursor: pointer;
-			transition: 0.2s;
-		}
-
-		.event-item:hover {
-			background-color: #f5f5f5;
-		}
-
-		.event-item:last-child {
-			border-bottom: none;
-		}
-
-		.label { 
-			font-weight: 600; 
-			color: #444; 
-		}
-
-		.page-wrapper { 
-			padding: 40px 20px; 
-			flex: 1; 
-		}
-
-		.focused-view {
-			position: fixed;
-			top: 0;
-			left: 0;
-			right: 0;
-			bottom: 0;
-			background-color: rgba(0, 0, 0, 0.5);
-			display: none;
-			align-items: center;
-			justify-content: center;
-			z-index: 1000;
-		}
-
-		.focused-view.active {
-			display: flex;
-		}
-
-		.focused-modal {
-			background: white;
-			border-radius: 15px;
-			padding: 40px;
-			max-width: 600px;
-			width: 90%;
-			max-height: 90vh;
-			overflow-y: auto;
-			box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-		}
-
-		.focused-header {
-			display: flex;
-			justify-content: space-between;
-			align-items: center;
-			margin-bottom: 20px;
-		}
-
-		.focused-header h2 {
-			color: #e45858;
-			margin: 0;
-			font-weight: bold;
-		}
-
-		.close-btn {
-			background: none;
-			border: none;
-			font-size: 24px;
-			cursor: pointer;
-			color: var(--gray);
-		}
-
-		.close-btn:hover {
-			color: #e45858;
-		}
-
-		.event-detail-field {
-			margin-bottom: 15px;
-		}
-
-		.event-detail-field label {
-			font-weight: bold;
-			color: var(--gray);
-			display: block;
-			margin-bottom: 5px;
-			font-size: 13px;
-		}
-
-		.event-detail-field .value {
-			background-color: #f5f5f5;
-			padding: 10px;
-			border-radius: 6px;
-			color: #333;
-		}
-
-		.focused-actions {
-			display: flex;
-			gap: 10px;
-			margin-top: 20px;
-			justify-content: flex-end;
-		}
-
-		.focused-actions button {
-			padding: 8px 16px;
-			border-radius: 6px;
-			border: none;
-			font-weight: 600;
-			font-size: 13px;
-			cursor: pointer;
-			transition: 0.2s;
-		}
-
-		.btn-edit {
-			background-color: #e45858;
-			color: white;
-		}
-
-		.btn-edit:hover {
-			background-color: #cc4646;
-		}
-
-		.btn-delete {
-			background-color: #dc3545;
-			color: white;
-		}
-
-		.btn-delete:hover {
-			background-color: #c82333;
-		}
-
-		.btn-close-modal {
-			background-color: #e0e0e0;
-			color: var(--gray);
-		}
-
-		.btn-close-modal:hover {
-			background-color: #d0d0d0;
-		}
-
-		.search-box {
-			margin-bottom: 15px;
-		}
-
-		.search-box input {
-			border: 2px solid var(--gray);
-			border-radius: 6px;
-			padding: 8px 12px;
-			font-size: 14px;
-			width: 100%;
-		}
-
-		.search-box input:focus {
-			outline: none;
-			border-color: #e45858;
-			box-shadow: 0 0 0 0.2rem rgba(228, 88, 88, 0.25);
-		}
-
-		/* FOOTER */
-		.footer { 
-			background-color: black; 
-			color: white; 
-			height: 100px; 
-			display: flex; 
-			justify-content: center; 
-			align-items: center; 
-			margin-top: auto; 
-			width: 100vw; 
-			position: relative; 
-			left: 50%; 
-			right: 50%; 
-			margin-left: -50vw; 
-			margin-right: -50vw; 
-		}
-
-		.footer-text { 
-			font-family: 'DM Serif Display', serif; 
-			font-size: 1.5rem; 
-			display: flex; 
-			gap: 10px; 
-			align-items: center; 
-		}
-
-		.copyright { 
-			text-align: center; 
-			padding: 8px 0 20px; 
-			font-size: 0.9rem; 
-		}
-	</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Events</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&display=swap" rel="stylesheet">
+  <style>
+    :root { --cream:#f9f5ea; --light-pink:#ffd8d1; --pink:#f9afb1; --gray:#3a3f3b; }
+    body { background-color:var(--light-pink); font-family:Arial, sans-serif; margin:0; color:var(--gray); min-height:100vh; display:flex; flex-direction:column; }
+    .navbar-brand{ font-weight:bold; display:flex; align-items:center; gap:6px; font-size:1.25rem; }
+    .btn-white{ background:white; border:2px solid var(--gray); color:var(--gray)!important; transition:0.2s }
+    .btn-white:hover{ background:var(--gray); color:white!important }
+    .card{ border-radius:12px }
+    .label{ font-weight:600; color:#444 }
+    .event-group { margin-bottom: 20px; }
+    .event-header { cursor: pointer; padding: 12px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #e45858; }
+    .event-header:hover { background: #e9ecef; }
+    .event-content { padding: 12px; background: #ffffff; border: 1px solid #dee2e6; border-top: none; border-radius: 0 0 8px 8px; }
+    .event-row { cursor: pointer; }
+    .event-row:hover { background-color: #f5f5f5; }
+    .page-wrapper{ padding:40px 20px; flex:1 }
+    .footer{ background-color:black; color:white; height:100px; display:flex; justify-content:center; align-items:center; margin-top:auto; width:100vw; position:relative; left:50%; right:50%; margin-left:-50vw; margin-right:-50vw; }
+    .footer-text{ font-family:'DM Serif Display', serif; font-size:1.5rem; display:flex; gap:10px; align-items:center }
+    .copyright{ text-align:center; padding:8px 0 20px; font-size:0.9rem }
+  </style>
 </head>
 <body>
 
 <!-- NAVBAR -->
 <nav class="navbar navbar-light bg-white shadow-sm px-4">
-	<a class="navbar-brand" href="/">
-		Ella
-		<img src="/fulllogo.jpg" alt="Ella Rises Logo" style="width:35px; height:35px; object-fit: contain; vertical-align: text-bottom; margin-left: 8px;">
-		Rises
-	</a>
+  <a class="navbar-brand" href="/">
+    Ella
+    <img src="/fulllogo.jpg" alt="Ella Rises Logo" style="width:35px; height:35px; object-fit: contain; vertical-align: text-bottom; margin-left: 8px;">
+    Rises
+  </a>
 
-	<div>
-		<a href="/userDashboard" class="btn btn-white btn-sm me-2">Back to Dashboard</a>
-		<a href="/logout" class="btn btn-white btn-sm">Logout</a>
-	</div>
+  <div>
+    <a href="/userDashboard" class="btn btn-white btn-sm me-2">Back to Dashboard</a>
+    <a href="/logout" class="btn btn-white btn-sm">Logout</a>
+  </div>
 </nav>
 
-<!-- PAGE -->
 <div class="page-wrapper container">
-	<div class="row justify-content-center">
-		<div class="col-md-10">
-			<div class="card p-4">
-				<h2>Manage Events</h2>
+  <div class="row justify-content-center">
+    <div class="col-lg-10">
+      <div class="card p-4 mb-4">
+        <h2>Events</h2>
 
-				<!-- Search Bar -->
-				<div class="search-box">
-					<input type="text" id="searchInput" placeholder="Search by event name..." class="form-control">
-				</div>
+        <!-- EVENT LIST VIEW -->
+        <% if (typeof groupedEvents !== 'undefined' && groupedEvents && Object.keys(groupedEvents).length > 0) { %>
+          <div class="card p-3 mb-4">
+            <h4>All Events</h4>
+            
+            <!-- Add New Event -->
+            <% if (typeof userLevel !== 'undefined' && userLevel === 'M') { %>
+              <div class="mb-3">
+                <a href="/addEvent" class="btn btn-success">+ Add New Event</a>
+              </div>
+            <% } %>
 
-				<!-- Add Event Button -->
-				<div class="mb-3">
-					<a href="/addEvent" class="btn btn-success" id="addEventBtn">
-						<i class="bi bi-plus-circle"></i> Add New Event
-					</a>
-				</div>
+            <!-- Search Bar -->
+            <div class="mb-3">
+              <input type="text" id="searchInput" class="form-control" placeholder="Search by event name..." onkeyup="filterEvents()">
+            </div>
 
-				<!-- Events Display -->
-				<% if (typeof groupedEvents !== 'undefined' && Object.keys(groupedEvents).length > 0) { %>
-					<% Object.keys(groupedEvents).forEach(eventType => { %>
-						<div class="event-group">
-							<div class="event-header" data-bs-toggle="collapse" data-bs-target="#events-<%= eventType.replace(/\s+/g, '-') %>">
-								<%= eventType %>
-							</div>
-							<div class="collapse show" id="events-<%= eventType.replace(/\s+/g, '-') %>">
-								<div class="event-content">
-									<% groupedEvents[eventType].forEach(event => { %>
-										<div class="event-item" onclick="showEventDetail(<%= event.EventOccurrenceID %>)">
-											<div class="d-flex justify-content-between">
-												<div>
-													<strong><%= event.EventName %></strong>
-													<br>
-													<small class="text-muted"><%= event.EventLocation || 'N/A' %></small>
-												</div>
-												<div class="text-end">
-													<small class="text-muted">
-														<%= new Date(event.EventDateTimeStart).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) %>
-													</small>
-													<br>
-													<small class="text-muted">
-														Cap: <%= event.EventCapacity %>
-													</small>
-												</div>
-											</div>
-										</div>
-									<% }); %>
-								</div>
-							</div>
-						</div>
-					<% }); %>
-				<% } else { %>
-					<div class="text-center text-muted py-4">
-						<p>No events found</p>
-					</div>
-				<% } %>
-			</div>
-		</div>
-	</div>
-</div>
+            <!-- Events grouped by type -->
+            <% Object.entries(groupedEvents).forEach(function([eventType, typeEvents]) { %>
+              <% if (typeEvents.length > 0) { %>
+                <div class="event-group">
+                  <div class="event-header" data-bs-toggle="collapse" data-bs-target="#type-<%= eventType.replace(/\s+/g, '-').toLowerCase() %>" aria-expanded="false">
+                    <strong><%= eventType %></strong>
+                    <span class="float-end badge bg-secondary"><%= typeEvents.length %> event<%= typeEvents.length !== 1 ? 's' : '' %></span>
+                  </div>
+                  <div class="collapse" id="type-<%= eventType.replace(/\s+/g, '-').toLowerCase() %>">
+                    <div class="event-content">
+                      <div class="table-responsive">
+                        <table class="table table-sm table-striped mb-0">
+                          <thead class="table-dark">
+                            <tr>
+                              <th>Name</th>
+                              <th>Location</th>
+                              <th>Start Date</th>
+                              <th>End Date</th>
+                              <th>Capacity</th>
+                              <th>Registration Deadline</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <% typeEvents.forEach(function(e) { %>
+                              <tr class="event-row" data-name="<%= (e.EventName || '').toLowerCase() %>" onclick="window.location.href='/displayEvents?id=<%= e.EventOccurrenceID %>';" style="cursor: pointer;">
+                                <td><%= e.EventName %></td>
+                                <td><%= e.EventLocation || '—' %></td>
+                                <td><%= e.EventDateTimeStart ? new Date(e.EventDateTimeStart).toLocaleDateString() : '—' %></td>
+                                <td><%= e.EventDateTimeEnd ? new Date(e.EventDateTimeEnd).toLocaleDateString() : '—' %></td>
+                                <td><%= e.EventCapacity || '—' %></td>
+                                <td><%= e.EventRegistrationDeadline ? new Date(e.EventRegistrationDeadline).toLocaleDateString() : '—' %></td>
+                              </tr>
+                            <% }); %>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              <% } %>
+            <% }); %>
+          </div>
 
-<!-- Focused View Modal -->
-<div class="focused-view" id="focusedView">
-	<div class="focused-modal">
-		<div class="focused-header">
-			<h2 id="focusedEventName"></h2>
-			<button class="close-btn" onclick="closeFocusedView()">×</button>
-		</div>
+        <!-- EVENT DETAIL VIEW -->
+        <% } else if (typeof event !== 'undefined' && event && event.EventOccurrenceID) { %>
+          <div class="card p-4 mb-4">
+            <div class="mb-3">
+              <% if (typeof userLevel !== 'undefined' && userLevel === 'M') { %>
+                <a href="/addEvent" class="btn btn-success">+ Add New Event</a>
+              <% } %>
+            </div>
+            
+            <h4><%= event.EventName %> <small class="text-muted">(ID: <%= event.EventOccurrenceID %>)</small></h4>
+            
+            <div class="row mt-3">
+              <div class="col-md-6">
+                <p><span class="label">Type:</span> <%= event.EventType || '—' %></p>
+                <p><span class="label">Location:</span> <%= event.EventLocation || '—' %></p>
+                <p><span class="label">Capacity:</span> <%= event.EventCapacity || '—' %></p>
+              </div>
+              <div class="col-md-6">
+                <p><span class="label">Start Date/Time:</span> <%= event.EventDateTimeStart ? new Date(event.EventDateTimeStart).toLocaleString() : '—' %></p>
+                <p><span class="label">End Date/Time:</span> <%= event.EventDateTimeEnd ? new Date(event.EventDateTimeEnd).toLocaleString() : '—' %></p>
+                <p><span class="label">Registration Deadline:</span> <%= event.EventRegistrationDeadline ? new Date(event.EventRegistrationDeadline).toLocaleDateString() : '—' %></p>
+              </div>
+            </div>
+            
+            <hr />
+            
+            <p><span class="label">Description:</span></p>
+            <p><%= event.EventDescription || '—' %></p>
+            
+            <% if (typeof userLevel !== 'undefined' && userLevel === 'M') { %>
+              <div class="mt-3">
+                <a href="/editEvent?id=<%= event.EventOccurrenceID %>" class="btn btn-primary me-2">Edit Event</a>
+                <button onclick="confirmDeleteEvent(<%= event.EventOccurrenceID %>)" class="btn btn-danger me-2">Delete Event</button>
+                <a href="/displayEvents" class="btn btn-secondary">Back to List</a>
+              </div>
+            <% } else { %>
+              <div class="mt-3">
+                <a href="/displayEvents" class="btn btn-secondary">Back to List</a>
+              </div>
+            <% } %>
+          </div>
 
-		<div class="event-detail-field">
-			<label>Event Type</label>
-			<div class="value" id="focusedEventType"></div>
-		</div>
-
-		<div class="event-detail-field">
-			<label>Location</label>
-			<div class="value" id="focusedEventLocation"></div>
-		</div>
-
-		<div class="event-detail-field">
-			<label>Description</label>
-			<div class="value" id="focusedEventDescription"></div>
-		</div>
-
-		<div class="event-detail-field">
-			<label>Start Date & Time</label>
-			<div class="value" id="focusedEventStart"></div>
-		</div>
-
-		<div class="event-detail-field">
-			<label>End Date & Time</label>
-			<div class="value" id="focusedEventEnd"></div>
-		</div>
-
-		<div class="event-detail-field">
-			<label>Capacity</label>
-			<div class="value" id="focusedEventCapacity"></div>
-		</div>
-
-		<div class="event-detail-field">
-			<label>Registration Deadline</label>
-			<div class="value" id="focusedEventDeadline"></div>
-		</div>
-
-		<div class="focused-actions">
-			<button class="btn-close-modal" onclick="closeFocusedView()">Close</button>
-			<button class="btn-edit" onclick="editEvent()">Edit</button>
-			<button class="btn-delete" onclick="deleteEvent()">Delete</button>
-		</div>
-	</div>
+        <% } else { %>
+          <div class="card p-4 mb-4">
+            <p>No events available at this time.</p>
+            <% if (typeof userLevel !== 'undefined' && userLevel === 'M') { %>
+              <a href="/addEvent" class="btn btn-success">+ Add New Event</a>
+            <% } %>
+          </div>
+        <% } %>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- FOOTER -->
 <div class="footer">
-	<div class="footer-text">
-		Ella
-		<img src="/fulllogo.jpg" alt="Ella Rises Logo" style="width:40px; height:40px; object-fit: contain;">
-		Rises
-	</div>
+  <div class="footer-text">
+    Ella
+    <img src="/fulllogo.jpg" alt="Ella Rises Logo" style="width:40px; height:40px; object-fit: contain;">
+    Rises
+  </div>
 </div>
 
 <p class="copyright">&copy; 2025 Ella Rises. All rights reserved.</p>
@@ -419,134 +177,44 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-	let currentEventId = null;
-	let allEvents = <% if (typeof groupedEvents !== 'undefined') { %>
-		<%= JSON.stringify((() => {
-			const events = [];
-			Object.values(groupedEvents).forEach(group => {
-				events.push(...group);
-			});
-			return events;
-		})()) %>
-	<% } else { %>
-		[]
-	<% } %>;
+  function filterEvents() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const eventRows = document.querySelectorAll('.event-row');
+    
+    eventRows.forEach(row => {
+      const eventName = row.textContent.toLowerCase();
+      if (eventName.includes(searchTerm)) {
+        row.style.display = '';
+      } else {
+        row.style.display = 'none';
+      }
+    });
+  }
 
-	console.log('All Events:', allEvents); // Debug log
-
-	document.addEventListener('DOMContentLoaded', function() {
-		// Search functionality
-		const searchInput = document.getElementById('searchInput');
-		if (searchInput) {
-			searchInput.addEventListener('input', (e) => {
-				const searchTerm = e.target.value.toLowerCase();
-				const eventItems = document.querySelectorAll('.event-item');
-				
-				eventItems.forEach(item => {
-					const eventName = item.textContent.toLowerCase();
-					
-					if (eventName.includes(searchTerm)) {
-						item.style.display = '';
-					} else {
-						item.style.display = 'none';
-					}
-				});
-			});
-		}
-
-		// Close modal when clicking outside
-		const focusedView = document.getElementById('focusedView');
-		if (focusedView) {
-			focusedView.addEventListener('click', (e) => {
-				if (e.target.id === 'focusedView') {
-					closeFocusedView();
-				}
-			});
-		}
-	});
-
-	// Show detailed event view
-	function showEventDetail(eventId) {
-		console.log('Showing event detail for ID:', eventId);
-		console.log('All events:', allEvents);
-		
-		const event = allEvents.find(e => e.EventOccurrenceID === eventId);
-		console.log('Found event:', event);
-		
-		if (!event) {
-			console.error('Event not found with ID:', eventId);
-			return;
-		}
-
-		currentEventId = eventId;
-
-		document.getElementById('focusedEventName').textContent = event.EventName;
-		document.getElementById('focusedEventType').textContent = event.EventType || 'N/A';
-		document.getElementById('focusedEventLocation').textContent = event.EventLocation || 'N/A';
-		document.getElementById('focusedEventDescription').textContent = event.EventDescription || 'N/A';
-		
-		const startDate = new Date(event.EventDateTimeStart).toLocaleString('en-US', {
-			year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
-		});
-		document.getElementById('focusedEventStart').textContent = startDate;
-
-		const endDate = event.EventDateTimeEnd ? new Date(event.EventDateTimeEnd).toLocaleString('en-US', {
-			year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
-		}) : 'N/A';
-		document.getElementById('focusedEventEnd').textContent = endDate;
-
-		document.getElementById('focusedEventCapacity').textContent = event.EventCapacity || 'N/A';
-
-		const deadline = event.EventRegistrationDeadline ? new Date(event.EventRegistrationDeadline).toLocaleString('en-US', {
-			year: 'numeric', month: 'long', day: 'numeric'
-		}) : 'N/A';
-		document.getElementById('focusedEventDeadline').textContent = deadline;
-
-		document.getElementById('focusedView').classList.add('active');
-	}
-
-	function closeFocusedView() {
-		document.getElementById('focusedView').classList.remove('active');
-		currentEventId = null;
-	}
-
-	function openAddEventForm() {
-		console.log('Opening add event form');
-		window.location.href = '/addEvent';
-	}
-
-	function editEvent() {
-		if (currentEventId) {
-			window.location.href = `/editEvent?id=${currentEventId}`;
-		}
-	}
-
-	function deleteEvent() {
-		if (!currentEventId) return;
-		
-		if (confirm('Are you sure you want to delete this event?')) {
-			fetch('/deleteEvent', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify({ eventId: currentEventId })
-			})
-			.then(res => res.json())
-			.then(data => {
-				if (data.success) {
-					alert('Event deleted successfully');
-					location.reload();
-				} else {
-					alert('Error deleting event: ' + (data.message || 'Unknown error'));
-				}
-			})
-			.catch(err => {
-				console.error('Error:', err);
-				alert('Error deleting event');
-			});
-		}
-	}
+  function confirmDeleteEvent(eventId) {
+    if (confirm('Are you sure you want to delete this event?')) {
+      fetch('/deleteEvent', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ eventId: eventId })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          alert('Event deleted successfully');
+          window.location.href = '/displayEvents';
+        } else {
+          alert('Error deleting event: ' + (data.message || 'Unknown error'));
+        }
+      })
+      .catch(err => {
+        console.error('Error:', err);
+        alert('Error deleting event');
+      });
+    }
+  }
 </script>
 
 </body>
