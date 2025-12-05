@@ -10,7 +10,7 @@
 		.card { border-radius: 12px; }
 		.page-header { font-family: 'DM Serif Display', serif; font-size: 1.6rem; }
 		.label { font-weight: 600; color: #444; }
-		.milestone-item { border-left: 4px solid #e45858; padding: 12px; margin-bottom: 12px; background: #f8f9fa; border-radius: 4px; }
+		.milestone-item { border-left: 4px solid #e45858; padding: 12px; margin-bottom: 12px; background: #f8f9fa; border-radius: 4px; cursor: pointer; }
 		.milestone-item:hover { background: #e9ecef; }
 	</style>
 </head>
@@ -28,53 +28,119 @@
 					</div>
 				</div>
 
+				<% if (focusedMilestone && focusedMilestone.MilestoneID) { %>
+					<hr />
+					<div class="d-flex justify-content-between align-items-center mb-3">
+						<h4>Milestone Detail</h4>
+						<a href="/displayMilestones" class="btn btn-white btn-sm">Back to Milestones</a>
+					</div>
+
+					<!-- View Mode -->
+					<div id="viewMode" class="card p-4 mb-4">
+						<h5 class="mb-3"><%= focusedMilestone.MilestoneTitle %></h5>
+						<p class="mb-1"><span class="label">Date:</span> <%= focusedMilestone.MilestoneDate ? new Date(focusedMilestone.MilestoneDate).toLocaleDateString() : '—' %></p>
+						<div class="mt-3">
+							<button class="btn btn-primary me-2" onclick="toggleEditMode()">Edit</button>
+							<form method="POST" action="/deleteMilestone" style="display: inline;" onsubmit="return confirm('Delete this milestone?');">
+								<input type="hidden" name="milestoneId" value="<%= focusedMilestone.MilestoneID %>" />
+								<button type="submit" class="btn btn-danger">Delete</button>
+							</form>
+						</div>
+					</div>
+
+					<!-- Edit Mode -->
+					<div id="editMode" class="card p-4 mb-4" style="display: none;">
+						<h5 class="mb-3">Edit Milestone</h5>
+						<form method="POST" action="/updateMilestone">
+							<input type="hidden" name="milestoneId" value="<%= focusedMilestone.MilestoneID %>" />
+							<div class="mb-3">
+								<label class="form-label">Milestone Title</label>
+								<input type="text" name="milestoneTitle" class="form-control" value="<%= focusedMilestone.MilestoneTitle || '' %>" required />
+							</div>
+							<div class="mb-3">
+								<label class="form-label">Achievement Date</label>
+								<input type="date" name="milestoneDate" class="form-control" value="<%= focusedMilestone.MilestoneDate ? new Date(focusedMilestone.MilestoneDate).toISOString().split('T')[0] : '' %>" required />
+							</div>
+							<div class="mt-3">
+								<button type="submit" class="btn btn-success me-2">Save</button>
+								<button type="button" class="btn btn-secondary" onclick="toggleEditMode()">Cancel</button>
+							</div>
+						</form>
+					</div>
+				<% } %>
+
+				<hr />
+				<div class="d-flex justify-content-between align-items-center mb-2">
+					<h4 class="mb-0">Your Milestones</h4>
+					<button class="btn btn-success" data-bs-toggle="collapse" data-bs-target="#addMilestoneForm" aria-expanded="false">Add Milestone</button>
+				</div>
+				<div class="collapse mb-3" id="addMilestoneForm">
+					<div class="card p-3">
+						<form method="POST" action="/addMilestone">
+							<div class="mb-3">
+								<label class="form-label">Milestone Title</label>
+								<input type="text" class="form-control" name="milestoneTitle" placeholder="e.g., Bachelor's Degree, Internship" required />
+							</div>
+							<div class="mb-3">
+								<label class="form-label">Achievement Date</label>
+								<input type="date" class="form-control" name="milestoneDate" required />
+							</div>
+							<div class="d-flex justify-content-end">
+								<button type="submit" class="btn btn-primary me-2">Create</button>
+								<button type="button" class="btn btn-secondary" data-bs-toggle="collapse" data-bs-target="#addMilestoneForm">Cancel</button>
+							</div>
+						</form>
+					</div>
+				</div>
+
+				<div class="mb-3">
+					<input type="text" id="searchInput" class="form-control" placeholder="Search milestones..." onkeyup="filterMilestones()">
+				</div>
+
 				<% if (!milestones || milestones.length === 0) { %>
 					<div class="alert alert-info">
 						<strong>No milestones yet.</strong> Keep working towards your goals!
 					</div>
 				<% } else { %>
 					<div class="card p-4 mb-4">
-						<h4 class="mb-4">Your Milestones</h4>
 						<% milestones.forEach(function(m) { %>
-							<div class="milestone-item d-flex justify-content-between align-items-center">
-								<div>
-									<p class="mb-2">
-										<span class="label"><%= m.MilestoneTitle %></span>
-									</p>
-									<small class="text-muted">
-										<%= m.MilestoneDate ? new Date(m.MilestoneDate).toLocaleDateString() : '—' %>
-									</small>
-								</div>
-								<form method="POST" action="/deleteMilestone" style="display: inline;" onsubmit="return confirm('Delete this milestone?');">
-									<input type="hidden" name="milestoneId" value="<%= m.MilestoneID %>" />
-									<button type="submit" class="btn btn-sm btn-danger">Delete</button>
-								</form>
+							<div class="milestone-item" data-name="<%= (m.MilestoneTitle || '').toLowerCase() %>" onclick="window.location.href='/displayMilestones?id=<%= m.MilestoneID %>'">
+								<p class="mb-1"><span class="label"><%= m.MilestoneTitle %></span></p>
+								<small class="text-muted"><%= m.MilestoneDate ? new Date(m.MilestoneDate).toLocaleDateString() : '—' %></small>
 							</div>
 						<% }) %>
 					</div>
 				<% } %>
-
-				<div class="card p-4">
-					<h4 class="mb-4">Add a New Milestone</h4>
-					<form method="POST" action="/addMilestone">
-						<div class="mb-3">
-							<label for="milestoneTitle" class="form-label">Milestone Title</label>
-							<input type="text" class="form-control" id="milestoneTitle" name="milestoneTitle" placeholder="e.g., Bachelor's Degree, Internship, etc." required />
-						</div>
-						<div class="mb-3">
-							<label for="milestoneDate" class="form-label">Achievement Date</label>
-							<input type="date" class="form-control" id="milestoneDate" name="milestoneDate" required />
-						</div>
-						<div class="d-flex justify-content-end">
-							<button type="submit" class="btn btn-primary">Add Milestone</button>
-						</div>
-					</form>
-				</div>
 
 			</div>
 		</div>
 	</div>
 
 	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+	<script>
+		function toggleEditMode() {
+			const viewMode = document.getElementById('viewMode');
+			const editMode = document.getElementById('editMode');
+			if (!viewMode || !editMode) return;
+			if (viewMode.style.display === 'none') {
+				viewMode.style.display = 'block';
+				editMode.style.display = 'none';
+			} else {
+				viewMode.style.display = 'none';
+				editMode.style.display = 'block';
+			}
+		}
+
+		function filterMilestones() {
+			const input = document.getElementById('searchInput');
+			const filter = input ? input.value.toLowerCase() : '';
+			const items = document.getElementsByClassName('milestone-item');
+
+			for (let i = 0; i < items.length; i++) {
+				const name = items[i].getAttribute('data-name') || '';
+				items[i].style.display = name.indexOf(filter) > -1 ? '' : 'none';
+			}
+		}
+	</script>
 </body>
 </html>

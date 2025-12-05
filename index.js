@@ -741,12 +741,13 @@ app.get("/tableauDashboard", (req, res) => {
   });
 });
 
-// Display milestones for current user
+// Display milestones for current user with optional focused view
 app.get("/displayMilestones", async (req, res) => {
   if (!req.session.isLoggedIn) return res.redirect("/login");
 
   try {
     const userEmail = req.session.email;
+    const { id } = req.query;
 
     // Fetch participant by email
     const participant = await knex("Participants")
@@ -754,7 +755,7 @@ app.get("/displayMilestones", async (req, res) => {
       .first();
 
     if (!participant) {
-      return res.render("displayMilestones", { milestones: [], participantName: "Unknown" });
+      return res.render("displayMilestones", { milestones: [], focusedMilestone: null, participantName: "Unknown" });
     }
 
     const participantId = participant.participantid || participant.ParticipantID;
@@ -772,14 +773,20 @@ app.get("/displayMilestones", async (req, res) => {
       MilestoneDate: m.milestonedate || m.MilestoneDate || null,
     }));
 
+    // Focused milestone when id is provided
+    let focusedMilestone = null;
+    if (id) {
+      focusedMilestone = normalizedMilestones.find((m) => `${m.MilestoneID}` === `${id}`) || null;
+    }
+
     const participantName = participant.participantfirstname || participant.ParticipantFirstName
       ? `${participant.participantfirstname || participant.ParticipantFirstName} ${participant.participantlastname || participant.ParticipantLastName}`
       : "Your";
 
-    res.render("displayMilestones", { milestones: normalizedMilestones, participantName, participantId });
+    res.render("displayMilestones", { milestones: normalizedMilestones, focusedMilestone, participantName, participantId });
   } catch (err) {
     console.error("Error loading milestones:", err);
-    res.render("displayMilestones", { milestones: [], participantName: "Unknown" });
+    res.render("displayMilestones", { milestones: [], focusedMilestone: null, participantName: "Unknown" });
   }
 });
 
@@ -834,6 +841,52 @@ app.post("/addMilestone", async (req, res) => {
   } catch (err) {
     console.error("Error adding milestone:", err);
     res.redirect("/displayMilestones");
+  }
+});
+
+// Update milestone (self-reported)
+app.post("/updateMilestone", async (req, res) => {
+  if (!req.session.isLoggedIn) return res.redirect("/login");
+
+  try {
+    const userEmail = req.session.email;
+    const { milestoneId, milestoneTitle, milestoneDate } = req.body;
+
+    if (!milestoneId || !milestoneTitle || !milestoneDate) {
+      return res.redirect("/displayMilestones");
+    }
+
+    // Fetch participant by email
+    const participant = await knex("Participants")
+      .where("ParticipantEmail", userEmail)
+      .first();
+
+    if (!participant) {
+      return res.redirect("/displayMilestones");
+    }
+
+    const participantId = participant.participantid || participant.ParticipantID;
+
+    // Ensure milestone belongs to this participant
+    const milestone = await knex("Milestones")
+      .where({ MilestoneID: parseInt(milestoneId, 10), ParticipantID: participantId })
+      .first();
+
+    if (!milestone) {
+      return res.redirect("/displayMilestones");
+    }
+
+    await knex("Milestones")
+      .where("MilestoneID", parseInt(milestoneId, 10))
+      .update({
+        MilestoneTitle: milestoneTitle.trim(),
+        MilestoneDate: milestoneDate,
+      });
+
+    return res.redirect(`/displayMilestones?id=${milestoneId}`);
+  } catch (err) {
+    console.error("Error updating milestone:", err);
+    return res.redirect("/displayMilestones");
   }
 });
 
@@ -926,6 +979,62 @@ app.post("/deleteMilestone", async (req, res) => {
       return res.redirect(`/displayParticipants?id=${req.body.participantId}`);
     }
     res.redirect("/displayMilestones");
+  }
+});
+
+// Admin: add milestone for any participant
+app.post("/addMilestoneAdmin", async (req, res) => {
+  if (!req.session.isLoggedIn) return res.redirect("/login");
+  const userLevel = (req.session.userLevel || "").toString().toUpperCase();
+  if (userLevel !== "M") return res.status(403).send("Forbidden");
+
+  try {
+    const { participantId, milestoneTitle, milestoneDate } = req.body;
+    if (!participantId || !milestoneTitle || !milestoneDate) {
+      return res.redirect("/viewMilestones");
+    }
+
+    const maxMilestone = await knex("Milestones").max("MilestoneID").first();
+    const currentMax = Object.values(maxMilestone)[0] || 0;
+    const nextId = currentMax + 1;
+
+    await knex("Milestones").insert({
+      MilestoneID: nextId,
+      ParticipantID: parseInt(participantId, 10),
+      MilestoneTitle: milestoneTitle.trim(),
+      MilestoneDate: milestoneDate,
+    });
+
+    return res.redirect("/viewMilestones");
+  } catch (err) {
+    console.error("Error adding milestone (admin):", err);
+    return res.redirect("/viewMilestones");
+  }
+});
+
+// Admin: update milestone
+app.post("/updateMilestoneAdmin", async (req, res) => {
+  if (!req.session.isLoggedIn) return res.redirect("/login");
+  const userLevel = (req.session.userLevel || "").toString().toUpperCase();
+  if (userLevel !== "M") return res.status(403).send("Forbidden");
+
+  try {
+    const { milestoneId, milestoneTitle, milestoneDate } = req.body;
+    if (!milestoneId || !milestoneTitle || !milestoneDate) {
+      return res.redirect("/viewMilestones");
+    }
+
+    await knex("Milestones")
+      .where("MilestoneID", parseInt(milestoneId, 10))
+      .update({
+        MilestoneTitle: milestoneTitle.trim(),
+        MilestoneDate: milestoneDate,
+      });
+
+    return res.redirect(`/viewMilestones?milestoneId=${milestoneId}`);
+  } catch (err) {
+    console.error("Error updating milestone (admin):", err);
+    return res.redirect("/viewMilestones");
   }
 });
 
@@ -1080,7 +1189,7 @@ app.get('/confirmDeleteParticipant', async (req, res) => {
   }
 });
 
-// View milestones (M-level users, grouped by title)
+// View milestones (M-level users, grouped by title, with focused view)
 app.get("/viewMilestones", async (req, res) => {
   if (!req.session.isLoggedIn) return res.redirect("/login");
   const userLevel = (req.session.userLevel || "").toString().toUpperCase();
@@ -1088,6 +1197,8 @@ app.get("/viewMilestones", async (req, res) => {
 
   try {
     const titleQuery = req.query.title;
+    const milestoneIdQuery = req.query.milestoneId ? parseInt(req.query.milestoneId, 10) : null;
+
     // Fetch all milestones with participant info
     const milestones = await knex("Milestones as m")
       .join("Participants as p", "p.ParticipantID", "m.ParticipantID")
@@ -1101,6 +1212,11 @@ app.get("/viewMilestones", async (req, res) => {
         "p.ParticipantEmail"
       )
       .orderBy("m.MilestoneDate", "desc");
+
+    // Fetch participants for add form
+    const participants = await knex("Participants")
+      .select("ParticipantID", "ParticipantFirstName", "ParticipantLastName", "ParticipantEmail")
+      .orderBy("ParticipantLastName", "asc");
 
     // Normalize and group by title
     const grouped = {};
@@ -1119,11 +1235,26 @@ app.get("/viewMilestones", async (req, res) => {
       grouped[title].push(item);
     });
 
+    // Focused view by milestone ID
+    if (milestoneIdQuery) {
+      const flat = Object.values(grouped).flat();
+      const focused = flat.find((m) => m.MilestoneID === milestoneIdQuery);
+      if (focused) {
+        return res.render("viewMilestones", {
+          focusedMilestone: focused,
+          milestoneGroups: grouped,
+          participants,
+          userLevel,
+        });
+      }
+    }
+
     // Focused view if title is selected
     if (titleQuery && grouped[titleQuery]) {
       return res.render("viewMilestones", {
         focusedMilestone: { title: titleQuery, items: grouped[titleQuery] },
-        milestoneGroups: null,
+        milestoneGroups: grouped,
+        participants,
         userLevel,
       });
     }
@@ -1132,11 +1263,12 @@ app.get("/viewMilestones", async (req, res) => {
     return res.render("viewMilestones", {
       milestoneGroups: grouped,
       focusedMilestone: null,
+      participants,
       userLevel,
     });
   } catch (err) {
     console.error("Error loading milestones for M-level:", err);
-    res.render("viewMilestones", { milestoneGroups: {}, focusedMilestone: null, userLevel });
+    res.render("viewMilestones", { milestoneGroups: {}, focusedMilestone: null, participants: [], userLevel });
   }
 });
 

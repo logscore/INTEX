@@ -13,6 +13,7 @@
 		.milestone-group { margin-bottom: 20px; }
 		.milestone-title { cursor: pointer; padding: 12px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #e45858; }
 		.milestone-title:hover { background: #e9ecef; }
+		.milestone-row { cursor: pointer; }
 		.milestone-content { padding: 12px; background: #ffffff; border: 1px solid #dee2e6; border-top: none; border-radius: 0 0 8px 8px; }
 	</style>
 </head>
@@ -31,38 +32,92 @@
 						<% } %>
 					</div>
 
-					<% if (typeof focusedMilestone !== 'undefined' && focusedMilestone && focusedMilestone.title) { %>
+					<!-- Focused milestone detail (by individual milestone) -->
+					<% if (typeof focusedMilestone !== 'undefined' && focusedMilestone && focusedMilestone.MilestoneID) { %>
 						<hr />
 						<div class="d-flex justify-content-between align-items-center mb-4">
-							<h3><%= focusedMilestone.title %></h3>
+							<h3><%= focusedMilestone.MilestoneTitle %></h3>
 							<a href="/viewMilestones" class="btn btn-white btn-sm">Back to All Milestones</a>
 						</div>
 						<div class="card p-4 mb-4">
-							<div class="table-responsive">
-								<table class="table table-sm table-striped mb-0">
-									<thead class="table-dark">
-										<tr>
-											<th>Participant</th>
-											<th>Date</th>
-										</tr>
-									</thead>
-									<tbody>
-										<% focusedMilestone.items.forEach(function(m) { %>
-											<tr>
-												<td><%= m.ParticipantName %><br/><small class="text-muted"><%= m.ParticipantEmail || '—' %></small></td>
-												<td><%= m.MilestoneDate ? new Date(m.MilestoneDate).toLocaleDateString() : '—' %></td>
-											</tr>
-										<% }) %>
-									</tbody>
-								</table>
+							<p class="mb-1"><span class="label">Participant:</span> <%= focusedMilestone.ParticipantName %> (<%= focusedMilestone.ParticipantEmail || '—' %>)</p>
+							<p class="mb-3"><span class="label">Date:</span> <%= focusedMilestone.MilestoneDate ? new Date(focusedMilestone.MilestoneDate).toLocaleDateString() : '—' %></p>
+							<div class="d-flex gap-2">
+								<button class="btn btn-primary" onclick="toggleEditMode()">Edit</button>
+								<form method="POST" action="/deleteMilestone" style="display: inline;" onsubmit="return confirm('Delete this milestone?');">
+									<input type="hidden" name="milestoneId" value="<%= focusedMilestone.MilestoneID %>">
+									<button type="submit" class="btn btn-danger">Delete</button>
+								</form>
 							</div>
 						</div>
-					<% } else if (typeof milestoneGroups !== 'undefined' && milestoneGroups && Object.keys(milestoneGroups).length > 0) { %>
-						<hr />
+
+						<div id="editMode" class="card p-4 mb-4" style="display: none;">
+							<h5>Edit Milestone</h5>
+							<form method="POST" action="/updateMilestoneAdmin">
+								<input type="hidden" name="milestoneId" value="<%= focusedMilestone.MilestoneID %>">
+								<div class="row g-2 mt-2">
+									<div class="col-md-6">
+										<label class="form-label">Title</label>
+										<input type="text" name="milestoneTitle" class="form-control" value="<%= focusedMilestone.MilestoneTitle || '' %>" required>
+									</div>
+									<div class="col-md-6">
+										<label class="form-label">Date</label>
+										<input type="date" name="milestoneDate" class="form-control" value="<%= focusedMilestone.MilestoneDate ? new Date(focusedMilestone.MilestoneDate).toISOString().split('T')[0] : '' %>" required>
+									</div>
+								</div>
+								<div class="mt-3">
+									<button type="submit" class="btn btn-success me-2">Save Changes</button>
+									<button type="button" class="btn btn-secondary" onclick="toggleEditMode()">Cancel</button>
+								</div>
+							</form>
+						</div>
+					<% } %>
+
+					<hr />
+					<div class="d-flex justify-content-between align-items-center mb-3">
 						<h4>All Milestones by Title</h4>
+						<button class="btn btn-success" data-bs-toggle="collapse" data-bs-target="#addMilestoneForm" aria-expanded="false">Add Milestone</button>
+					</div>
+					<div class="collapse mb-3" id="addMilestoneForm">
+						<div class="card p-3">
+							<form method="POST" action="/addMilestoneAdmin">
+								<div class="row g-2">
+									<div class="col-md-6">
+										<label class="form-label">Participant *</label>
+										<select name="participantId" class="form-select" required>
+											<option value="">-- Select Participant --</option>
+											<% if (typeof participants !== 'undefined') { %>
+												<% participants.forEach(function(p) { %>
+													<option value="<%= p.ParticipantID || p.participantid %>"><%= (p.ParticipantFirstName || p.participantfirstname || '') + ' ' + (p.ParticipantLastName || p.participantlastname || '') %> (<%= p.ParticipantEmail || p.participantemail || '' %>)</option>
+												<% }) %>
+											<% } %>
+										</select>
+									</div>
+									<div class="col-md-3">
+										<label class="form-label">Title *</label>
+										<input type="text" name="milestoneTitle" class="form-control" required>
+									</div>
+									<div class="col-md-3">
+										<label class="form-label">Date *</label>
+										<input type="date" name="milestoneDate" class="form-control" required>
+									</div>
+								</div>
+								<div class="mt-3 d-flex justify-content-end">
+									<button type="submit" class="btn btn-primary me-2">Create</button>
+									<button type="button" class="btn btn-secondary" data-bs-toggle="collapse" data-bs-target="#addMilestoneForm">Cancel</button>
+								</div>
+							</form>
+						</div>
+					</div>
+
+					<div class="mb-3">
+						<input type="text" id="searchInput" class="form-control" placeholder="Search by title or participant..." onkeyup="filterMilestones()">
+					</div>
+
+					<% if (typeof milestoneGroups !== 'undefined' && milestoneGroups && Object.keys(milestoneGroups).length > 0) { %>
 						<% Object.entries(milestoneGroups).forEach(function([title, milestonesForTitle]) { %>
 							<% if (milestonesForTitle.length > 0) { %>
-								<div class="milestone-group">
+								<div class="milestone-group" data-title="<%= title.toLowerCase() %>">
 									<div class="milestone-title" data-bs-toggle="collapse" data-bs-target="#milestone-<%= title.replace(/\s+/g, '-').toLowerCase() %>" aria-expanded="false">
 										<strong><%= title %></strong>
 										<span class="float-end badge bg-secondary"><%= milestonesForTitle.length %> milestones</span>
@@ -79,7 +134,7 @@
 													</thead>
 													<tbody>
 														<% milestonesForTitle.forEach(function(m) { %>
-															<tr style="cursor: pointer;" onclick="window.location.href='/viewMilestones?title=<%= encodeURIComponent(title) %>';">
+															<tr class="milestone-row" data-name="<%= (title + ' ' + (m.ParticipantName || '') + ' ' + (m.ParticipantEmail || '')).toLowerCase() %>" onclick="window.location.href='/viewMilestones?milestoneId=<%= m.MilestoneID %>'">
 																<td><%= m.ParticipantName %><br/><small class="text-muted"><%= m.ParticipantEmail || '—' %></small></td>
 																<td><%= m.MilestoneDate ? new Date(m.MilestoneDate).toLocaleDateString() : '—' %></td>
 															</tr>
@@ -103,5 +158,28 @@
 		</div>
 	</div>
 	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+	<script>
+		function filterMilestones() {
+			const query = (document.getElementById('searchInput')?.value || '').toLowerCase();
+			document.querySelectorAll('.milestone-group').forEach(group => {
+				const title = group.getAttribute('data-title') || '';
+				let showGroup = title.includes(query);
+				group.querySelectorAll('.milestone-row').forEach(row => {
+					const name = row.getAttribute('data-name') || '';
+					const match = name.includes(query) || title.includes(query);
+					row.style.display = match ? '' : 'none';
+					if (match) showGroup = true;
+				});
+				group.style.display = showGroup ? '' : 'none';
+			});
+		}
+
+		function toggleEditMode() {
+			const editCard = document.getElementById('editMode');
+			if (!editCard) return;
+			const isHidden = editCard.style.display === 'none' || editCard.style.display === '';
+			editCard.style.display = isHidden ? 'block' : 'none';
+		}
+	</script>
 </body>
 </html>
