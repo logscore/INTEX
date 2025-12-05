@@ -25,12 +25,19 @@
     --rose: #ce325b;
   }
 
-  body {
+  html, body {
     font-family: Arial, sans-serif;
     background-color: var(--light-pink);
     margin: 0;
     padding: 0;
     color: var(--gray);
+    height: 100%;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
   }
 
   /* NAVBAR */
@@ -104,11 +111,12 @@
   .footer {
     background-color: black;
     color: white;
-    height: 100px;
+    width: 100vw;
+    margin-left: calc(-50vw + 50%);
+    padding: 20px 0;
     display: flex;
     justify-content: center;
     align-items: center;
-    margin-top: 0;
   }
 
   .footer-text {
@@ -165,15 +173,10 @@
 <!-- PAGE CONTENT -->
 <div class="page-wrapper container">
     <h1 class="page-title">Interactive Dashboard</h1>
-</div>
-
-<!-- FOOTER (copied from index.ejs) -->
-<div class="footer">
-  <div class="footer-text">
-    Ella 
-    <img src="/EllaRises.jpg" alt="Logo" style="width:30px; height:auto; vertical-align: middle;">
-    Rises
-  </div>
+    <div class="dashboard-container">
+        <div id="loadingMessage" class="loading">Loading dashboard...</div>
+        <div id="tableauViz"></div>
+    </div>
 </div>
 
 <script>
@@ -208,15 +211,17 @@
 </script>
 
 <!-- FOOTER -->
-<div class="footer">
-  <div class="footer-text">
-    Ella 
-    <img src="/EllaRises.jpg" alt="Logo" style="width:30px; height:auto; vertical-align: middle;">
-    Rises
+<div style="width: 100%; display: flex; flex-direction: column; background-color: black;">
+  <div class="footer">
+    <div class="footer-text">
+      Ella 
+      <img src="/EllaRises.jpg" alt="Logo" style="width:30px; height:auto; vertical-align: middle;">
+      Rises
+    </div>
   </div>
-</div>
 
-<p class="copyright">© 2025 Ella Rises. All Rights Reserved.</p>
+  <p class="copyright" style="background-color: black; color: white; margin: 0;">© 2025 Ella Rises. All Rights Reserved.</p>
+</div>
 
 </body>
 </html>
