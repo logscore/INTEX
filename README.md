@@ -372,6 +372,9 @@ Main tables:
 cd INTEX
 bun serve
 ```
+### Test Credentials
+- **Manager Login:** `manager@gmail.com` / `password123`
+- **User Login:** `user@gmail.com` / `password123`
 
 Server runs on `http://localhost:3000`
 
