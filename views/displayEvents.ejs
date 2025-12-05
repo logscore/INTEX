@@ -113,12 +113,6 @@
         <!-- EVENT DETAIL VIEW -->
         <% } else if (typeof event !== 'undefined' && event && event.EventOccurrenceID) { %>
           <div class="card p-4 mb-4">
-            <div class="mb-3">
-              <% if (typeof userLevel !== 'undefined' && userLevel === 'M') { %>
-                <a href="/addEvent" class="btn btn-success">+ Add New Event</a>
-              <% } %>
-            </div>
-            
             <h4><%= event.EventName %> <small class="text-muted">(ID: <%= event.EventOccurrenceID %>)</small></h4>
             
             <div class="row mt-3">
@@ -142,7 +136,7 @@
             <% if (typeof userLevel !== 'undefined' && userLevel === 'M') { %>
               <div class="mt-3">
                 <a href="/editEvent?id=<%= event.EventOccurrenceID %>" class="btn btn-primary me-2">Edit Event</a>
-                <button onclick="confirmDeleteEvent(<%= event.EventOccurrenceID %>)" class="btn btn-danger me-2">Delete Event</button>
+                <button onclick="confirmDeleteEvent(<%= event.EventOccurrenceID %>)" class="btn btn-danger">Delete Event</button>
                 <a href="/displayEvents" class="btn btn-secondary">Back to List</a>
               </div>
             <% } else { %>
@@ -235,6 +229,7 @@
   function filterEvents() {
     const searchTerm = document.getElementById('searchInput').value.toLowerCase();
     const eventRows = document.querySelectorAll('.event-row');
+    const eventGroups = document.querySelectorAll('.event-group');
     
     eventRows.forEach(row => {
       const eventName = row.textContent.toLowerCase();
@@ -242,6 +237,30 @@
         row.style.display = '';
       } else {
         row.style.display = 'none';
+      }
+    });
+
+    // Show/hide event groups and auto-expand/collapse based on search
+    eventGroups.forEach(group => {
+      const visibleRows = Array.from(group.querySelectorAll('.event-row')).filter(row => row.style.display !== 'none');
+      
+      if (visibleRows.length > 0) {
+        group.style.display = '';
+        const collapseDiv = group.querySelector('.collapse');
+        
+        if (searchTerm.length > 0) {
+          // Auto-expand groups when searching
+          if (collapseDiv && !collapseDiv.classList.contains('show')) {
+            const bsCollapse = new bootstrap.Collapse(collapseDiv, { toggle: true });
+          }
+        } else {
+          // Collapse groups when search is cleared
+          if (collapseDiv && collapseDiv.classList.contains('show')) {
+            const bsCollapse = new bootstrap.Collapse(collapseDiv, { toggle: true });
+          }
+        }
+      } else {
+        group.style.display = 'none';
       }
     });
   }

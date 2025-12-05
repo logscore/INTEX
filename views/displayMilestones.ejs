@@ -190,10 +190,19 @@
 			const input = document.getElementById('searchInput');
 			const filter = input ? input.value.toLowerCase() : '';
 			const items = document.getElementsByClassName('milestone-item');
+			const cardContainer = document.querySelector('.card:has(.milestone-item)');
 
 			for (let i = 0; i < items.length; i++) {
 				const name = items[i].getAttribute('data-name') || '';
 				items[i].style.display = name.indexOf(filter) > -1 ? '' : 'none';
+			}
+			
+			// Show the card container if there are visible items
+			if (cardContainer && filter.length > 0) {
+				const visibleItems = Array.from(items).filter(item => item.style.display !== 'none');
+				if (visibleItems.length > 0) {
+					cardContainer.style.display = '';
+				}
 			}
 		}
 	</script>

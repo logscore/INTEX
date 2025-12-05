@@ -139,8 +139,17 @@ app.get("/", async (req, res) => {
       .orderBy("EventDateTimeStart", "asc")
       .limit(6);
 
+    // Normalize event column names (handle lowercase from database)
+    const normalizedEvents = events.map(e => ({
+      EventOccurrenceID: e.eventoccurrenceid || e.EventOccurrenceID,
+      EventName: e.eventname || e.EventName,
+      EventDateTimeStart: e.eventdatetimestart || e.EventDateTimeStart,
+      EventDateTimeEnd: e.eventdatetimeend || e.EventDateTimeEnd,
+      EventLocation: e.eventlocation || e.EventLocation
+    }));
+
     res.render("index", {
-      events,
+      events: normalizedEvents,
       isLoggedIn: req.session.isLoggedIn || false,
       userEmail: req.session.email || null,
       userLevel: req.session.userLevel || null
@@ -697,17 +706,30 @@ app.get("/displaySurveys", async (req, res) => {
           .join("EventOccurences as e", "e.EventOccurrenceID", "r.EventOccurrenceID")
           .select(
             "r.RegistrationID",
+            "p.ParticipantID",
             "p.ParticipantFirstName",
             "p.ParticipantLastName",
             "p.ParticipantEmail",
+            "e.EventOccurrenceID",
             "e.EventName",
             "e.EventDateTimeStart"
           )
           .orderBy("e.EventName", "asc");
 
+        // Fetch all events for the form
+        const events = await knex("EventOccurences as eo")
+          .join("EventTemplates as et", "eo.EventTemplateID", "et.EventTemplateID")
+          .select(
+            "eo.EventOccurrenceID",
+            "eo.EventName",
+            "eo.EventDateTimeStart"
+          )
+          .orderBy("eo.EventName", "asc");
+
         return res.render("displaySurveys", { 
           groupedSurveys: groupedByEvent, 
           participants: participants.map(normalizeParticipantRow),
+          events: events,
           registrations,
           userLevel 
         });
@@ -743,7 +765,25 @@ app.post('/createSurvey', async (req, res) => {
   if (userLevel !== 'M') return res.status(403).send('Forbidden');
 
   try {
-    const { registrationId, satisfaction, usefulness, instructor, recommend, comments } = req.body;
+    const { participantId, eventId, satisfaction, usefulness, instructor, recommend, comments } = req.body;
+
+    console.log('Survey form data:', { participantId, eventId });
+
+    // Look up the registration for this participant and event
+    const registration = await knex('Registrations')
+      .where({ 'Registrations.ParticipantID': parseInt(participantId, 10), 'Registrations.EventOccurrenceID': parseInt(eventId, 10) })
+      .first();
+
+    console.log('Found registration:', registration);
+
+    if (!registration) {
+      // Try with raw query to debug
+      const allRegs = await knex('Registrations').where('ParticipantID', parseInt(participantId, 10)).select();
+      console.log('All registrations for participant:', allRegs);
+      return res.status(400).send('Registration not found for this participant and event');
+    }
+
+    const registrationId = registration.registrationid;
 
     const satisfactionScore = satisfaction ? parseFloat(satisfaction) : null;
     const usefulnessScore = usefulness ? parseFloat(usefulness) : null;
@@ -770,7 +810,7 @@ app.post('/createSurvey', async (req, res) => {
 
     await knex('Surveys').insert({
       SurveyID: nextId,
-      RegistrationID: parseInt(registrationId, 10),
+      RegistrationID: registrationId,
       SurveySatisfactionScore: satisfactionScore,
       SurveyUsefulnessScore: usefulnessScore,
       SurveyInstructorScore: instructorScore,

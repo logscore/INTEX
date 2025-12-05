@@ -232,6 +232,22 @@
 					if (match) showGroup = true;
 				});
 				group.style.display = showGroup ? '' : 'none';
+				
+				// Auto-expand/collapse groups based on search
+				if (showGroup) {
+					const collapseDiv = group.querySelector('.collapse');
+					if (query.length > 0) {
+						// Auto-expand groups when searching
+						if (collapseDiv && !collapseDiv.classList.contains('show')) {
+							const bsCollapse = new bootstrap.Collapse(collapseDiv, { toggle: true });
+						}
+					} else {
+						// Collapse groups when search is cleared
+						if (collapseDiv && collapseDiv.classList.contains('show')) {
+							const bsCollapse = new bootstrap.Collapse(collapseDiv, { toggle: true });
+						}
+					}
+				}
 			});
 		}
 
